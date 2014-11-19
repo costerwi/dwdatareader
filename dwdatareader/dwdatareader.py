@@ -176,9 +176,13 @@ class DW:
     """Initialize and de-initialize the Dewesoft data reader dll library"""
     DLL = None # class variable accessible to other classes
     
-    def __init__(self, dllName = "DWDataReaderLib64"):
+    def __init__(self, dllName = None):
         """Load the dll library"""
         # Dynamic library available from http://www.dewesoft.com/developers
+        import os
+        if not dllName:
+            dllName = os.path.join(os.path.dirname(__file__),
+                "DWDataReaderLib64")
         self.name = dllName
         DW.DLL = ctypes.cdll.LoadLibrary(dllName)
 

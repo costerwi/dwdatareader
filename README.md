@@ -6,7 +6,7 @@ available from http://www.dewesoft.com/developers
 
 Installation:
 ```
-easy_install http://github.com/costerwi/dwdatareader/tarball/master
+pip install http://github.com/costerwi/dwdatareader/tarball/master
 ```
 
 Example usage:
