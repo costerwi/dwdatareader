@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='dwdatareader',
-      version='0.1.6',
+      version='0.1.7',
       description='Python module to interact with Dewesoft DWDataReaderLib shared library',
       long_description=open('README.md').read(),
       author='Carl Osterwisch',
