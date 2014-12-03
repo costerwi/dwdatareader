@@ -200,7 +200,7 @@ class DW:
     
     def __enter__(self):
         """Used to maintain library in context"""
-        self.Init()
+        self.init()
         return self
         
     def __exit__(self, type, value, traceback):
