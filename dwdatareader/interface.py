@@ -20,6 +20,7 @@ class DWError(RuntimeError):
 
 class DWInfo(ctypes.Structure):
     """Structure to hold metadata about DWFile"""
+    _pack_ = 1
     _fields_ = [("sample_rate", ctypes.c_double),
                 ("start_store_time", ctypes.c_double),
                 ("duration", ctypes.c_double)]
@@ -36,6 +37,7 @@ class DWInfo(ctypes.Structure):
 
 
 class DWReducedValue(ctypes.Structure):
+    _pack_ = 1
     _fields_ = [("time_stamp", ctypes.c_double),
                 ("ave", ctypes.c_double),
                 ("min", ctypes.c_double),
@@ -47,6 +49,7 @@ class DWReducedValue(ctypes.Structure):
 
 
 class DWEvent(ctypes.Structure):
+    _pack_ = 1
     _fields_ = [("event_type", ctypes.c_int),
                 ("time_stamp", ctypes.c_double),
                 ("event_text", ctypes.c_char * 200)]
@@ -56,6 +59,7 @@ class DWEvent(ctypes.Structure):
     
 class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
+    _pack_ = 1
     _fields_ = [("index", ctypes.c_int),
                 ("name", ctypes.c_char * 100),
                 ("unit", ctypes.c_char * 20),
