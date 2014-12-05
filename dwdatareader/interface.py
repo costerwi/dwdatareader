@@ -45,7 +45,15 @@ class DWReducedValue(ctypes.Structure):
     def __str__(self):
         return "{0.time_stamp} {0.ave} ave".format(self)
 
+
+class DWEvent(ctypes.Structure):
+    _fields_ = [("event_type", ctypes.c_int),
+                ("time_stamp", ctypes.c_double),
+                ("event_text", ctypes.c_char * 200)]
+    def __str__(self):
+        return "{0.time_stamp} {0.event_text}".format(self)
         
+    
 class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
     _fields_ = [("index", ctypes.c_int),
@@ -133,6 +141,21 @@ class DWFile(collections.Mapping):
         if stat:
             raise DWError(stat)
             
+    def events(self):
+        """Load and return timeseries of file events"""
+        import pandas
+
+        edict = {}
+        nEvents = DW.DLL.DWGetEventListCount()
+        if nEvents:
+            events_ = (DWEvent * nEvents)()
+            stat = DW.DLL.DWGetEventList(events_)
+            if stat:
+                raise DWError(stat)
+            for e in events_:
+                edict[e.time_stamp] = e.event_text
+        return pandas.Series(edict, name='Events')
+
     def close(self):
         DW.DLL.DWCloseDataFile()
         self.channels = [] # prevent access to closed file
