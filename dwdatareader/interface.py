@@ -197,9 +197,14 @@ class DW:
         """Load the dll library"""
         # Dynamic library available from http://www.dewesoft.com/developers
         import os
+        import platform
         if not dllName:
-            dllName = os.path.join(os.path.dirname(__file__),
-                "DWDataReaderLib64")
+            if platform.architecture()[0] == '32bit':
+                dllName = os.path.join(os.path.dirname(__file__),
+                    "DWDataReaderLib")
+            else:
+                dllName = os.path.join(os.path.dirname(__file__),
+                    "DWDataReaderLib64")
         self.name = dllName
         DW.DLL = ctypes.cdll.LoadLibrary(dllName)
 
