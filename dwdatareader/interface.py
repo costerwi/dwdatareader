@@ -165,6 +165,14 @@ class DWFile(collections.Mapping):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
+    def dataframe(self, columns):
+        """Return dataframe of selected series"""
+        import pandas
+        d = {}
+        for key in columns:
+            d.set_defaut(key, self[key].series())
+        return pandas.DataFrame(d)
+
     def close(self):
         DW.DLL.DWCloseDataFile()
         self.channels = [] # prevent access to closed file
