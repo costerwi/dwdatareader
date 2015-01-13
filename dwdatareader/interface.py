@@ -148,8 +148,9 @@ class DWFile(collections.Mapping):
     def events(self):
         """Load and return timeseries of file events"""
         import pandas
-
-        edict = {}
+        time_stamp = []
+        event_type = []
+        event_text = []
         nEvents = DW.DLL.DWGetEventListCount()
         if nEvents:
             events_ = (DWEvent * nEvents)()
@@ -157,8 +158,12 @@ class DWFile(collections.Mapping):
             if stat:
                 raise DWError(stat)
             for e in events_:
-                edict[e.time_stamp] = e.event_text
-        return pandas.Series(edict, name='Events')
+                time_stamp.append(e.time_stamp)
+                event_type.append(e.event_type)
+                event_text.append(e.event_text)
+        return pandas.DataFrame(
+                data = {'type': event_type, 'text': event_text},
+                index = time_stamp)
 
     def close(self):
         DW.DLL.DWCloseDataFile()
