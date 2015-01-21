@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+# Read module version from init file
+with open('dwdatareader/__init__.py') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            exec(line)
+
 from distutils.core import setup
-exec(open('dwdatareader/_version.py'))
 setup(name='dwdatareader',
       version=__version__,
       description='Python module to interact with Dewesoft DWDataReaderLib shared library',
