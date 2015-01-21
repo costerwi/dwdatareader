@@ -14,4 +14,5 @@ with dwdatareader.DW() as dw:
 """
 
 __all__ = ['DW', 'DWError']
+from _version import __version__
 from interface import DW, DWError

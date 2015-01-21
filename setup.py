@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-
+exec(open('dwdatareader/_version.py'))
 setup(name='dwdatareader',
-      version='0.3.0',
+      version=__version__,
       description='Python module to interact with Dewesoft DWDataReaderLib shared library',
       long_description=open('README.md').read(),
       author='Carl Osterwisch',
