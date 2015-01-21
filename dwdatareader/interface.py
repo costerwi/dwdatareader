@@ -174,7 +174,7 @@ class DWFile(collections.Mapping):
         import pandas
         d = {}
         for key in columns:
-            d.set_defaut(key, self[key].series())
+            d.set_default(key, self[key].series())
         return pandas.DataFrame(d)
 
     def close(self):
