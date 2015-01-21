@@ -179,7 +179,6 @@ class DWFile(collections.Mapping):
 
     def close(self):
         DW.DLL.DWCloseDataFile()
-        self.channels = [] # prevent access to closed file
         
     def __len__(self):
         return len(self.channels)
@@ -203,6 +202,9 @@ class DWFile(collections.Mapping):
 
     def __exit__(self, type, value, traceback):
         """Close file when it goes out of context"""
+        self.close()
+
+    def __del__(self):
         self.close()
 
 
@@ -254,4 +256,7 @@ class DW:
         
     def __exit__(self, type, value, traceback):
         """Close library when it goes out of context"""
+        self.deInit()
+
+    def __del__(self):
         self.deInit()
