@@ -109,6 +109,10 @@ class DWChannel(ctypes.Structure):
             data = [i.ave for i in r]
         return pandas.Series(data = data, index = time, name = self.name)
 
+    def plot(self):
+        """Plot the data as a series"""
+        return self.series().plot()
+
 
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
