@@ -109,9 +109,9 @@ class DWChannel(ctypes.Structure):
             data = [i.ave for i in r]
         return pandas.Series(data = data, index = time, name = self.name)
 
-    def plot(self):
+    def plot(self, *args, **kwargs):
         """Plot the data as a series"""
-        return self.series().plot()
+        return self.series().plot(*args, **kwargs)
 
 
 class DWFile(collections.Mapping):
