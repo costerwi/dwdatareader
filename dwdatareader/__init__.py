@@ -130,10 +130,12 @@ class DWChannel(ctypes.Structure):
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
 
-    closed = True  # bool indicating the current state of the file object  
-    
     def __init__(self, name = None):
-        self.open(name)
+        self.name = ''
+        self.closed = True # bool indicating the current state of the file object
+        self.info = DWinfo()
+        if name:
+            self.open(name)
 
     def open(self, name = None):
         """Open the specified file and read channel headers"""
