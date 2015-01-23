@@ -231,6 +231,11 @@ class DWFile(collections.Mapping):
         """Close file when it goes out of context"""
         self.close()
 
+    def __del__(self, type, value, traceback):
+        """Close file when destroyed"""
+        self.close()
+
+
 # Define module methods
 def loadDLL(dllName = ''):
     import os
