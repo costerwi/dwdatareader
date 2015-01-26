@@ -130,10 +130,9 @@ class DWChannel(ctypes.Structure):
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
 
+    closed = True  # bool indicating the current state of the file object  
+    
     def __init__(self, name = None):
-        self.name = ''
-        self.closed = True # bool indicating the current state of the file object
-        self.info = DWinfo()
         if name:
             self.open(name)
 
@@ -142,13 +141,11 @@ class DWFile(collections.Mapping):
         
         if not name:
             name = self.name # reopen previous file
-        if not self.closed:
-            self.close()
         info = DWInfo()
         stat = DLL.DWOpenDataFile(name.encode(), info)
         if stat:
             raise DWError(stat)
-        self.closed = False
+        DWFile.closed = False
         self.name = name
         self.info = info
 
@@ -202,10 +199,11 @@ class DWFile(collections.Mapping):
         for key in columns:
             d[key] = self[key].series()
         return pandas.DataFrame(d)
-
-    def close(self):
+        
+    @classmethod
+    def close(cls):
         DLL.DWCloseDataFile()
-        self.closed = True
+        cls.closed = True
         
     def __len__(self):
         return len(self.channels)
@@ -230,11 +228,6 @@ class DWFile(collections.Mapping):
     def __exit__(self, type, value, traceback):
         """Close file when it goes out of context"""
         self.close()
-
-    def __del__(self, type, value, traceback):
-        """Close file when destroyed"""
-        self.close()
-
 
 # Define module methods
 def loadDLL(dllName = ''):
@@ -262,6 +255,8 @@ def unloadDLL():
 def open(name):
     return DWFile(name)
 
+def close():
+    return DWFile.close()
 # Load and initialize the DLL
 loadDLL()
 
