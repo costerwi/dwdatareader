@@ -18,9 +18,8 @@ DLL = None # module variable accessible to other classes
 
 import collections
 import ctypes
-import exceptions
 
-class DWError(exceptions.RuntimeError):
+class DWError(RuntimeError):
     """Interpret error number returned from dll"""
     errors = ["status OK", "error in DLL", "cannot open d7d file",
             "file already in use", "d7d file corrupt", "memory allocation"]
@@ -77,9 +76,10 @@ class DWChannel(ctypes.Structure):
                 ("description", ctypes.c_char * 200),
                 ("color" , ctypes.c_uint),
                 ("array_size", ctypes.c_int)]
-                
+    
     def __str__(self):
-        return "{0.name} ({0.unit}) {0.description}".format(self)
+        return "{0} ({1}) {2}".format(self.name.decode(), self.unit.decode(),
+            self.description.decode())
         
     def scaled(self):
         """Load full speed data"""
@@ -118,12 +118,13 @@ class DWChannel(ctypes.Structure):
             r = self.reduced()
             time = [i.time_stamp for i in r]
             data = [i.ave for i in r]
-        return pandas.Series(data = data, index = time, name = self.name)
+        return pandas.Series(data = data, index = time, 
+                             name = self.name.decode())
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
         ax = self.series().plot(*args, **kwargs)
-        ax.set_ylabel(self.unit)
+        ax.set_ylabel(self.unit.decode())
         return ax
 
 
@@ -151,19 +152,20 @@ class DWFile(collections.Mapping):
 
         # Read file header section
         self.header = dict()
-        name = ctypes.create_string_buffer(100)
-        text = ctypes.create_string_buffer(200)
+        name_ = ctypes.create_string_buffer(100)
+        text_ = ctypes.create_string_buffer(200)
         nHeaders = DLL.DWGetHeaderEntryCount()
         for i in range(nHeaders):
-            stat = DLL.DWGetHeaderEntryTextF(i, text, len(text))
+            stat = DLL.DWGetHeaderEntryTextF(i, text_, len(text_))
             if stat:
                 raise DWError(stat)
-            if len(text.value) and not(text.value.startswith('Select...') or 
-                    text.value.startswith('To fill out')):
-                stat = DLL.DWGetHeaderEntryNameF(i, name, len(name))
+            text = text_.value.decode()
+            if len(text) and not(text.startswith('Select...') or 
+                    text.startswith('To fill out')):
+                stat = DLL.DWGetHeaderEntryNameF(i, name_, len(name_))
                 if stat:
                     raise DWError(stat)
-                self.header[name.value] = text.value
+                self.header[name_.value.decode()] = text
             
         # Read channel metadata
         nchannels = DLL.DWGetChannelListCount()
@@ -187,7 +189,7 @@ class DWFile(collections.Mapping):
             for e in events_:
                 time_stamp.append(e.time_stamp)
                 event_type.append(e.event_type)
-                event_text.append(e.event_text)
+                event_text.append(e.event_text.decode())
         return pandas.DataFrame(
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
@@ -210,13 +212,13 @@ class DWFile(collections.Mapping):
 
     def __getitem__(self, key):
         for ch in self.channels: # brute force lookup
-            if ch.name == key or ch.index == key:
+            if ch.index == key or ch.name == key.encode():
                 return ch
         raise KeyError(key)
                 
     def __iter__(self):
         for ch in self.channels:
-            yield ch.name
+            yield ch.name.decode()
             
     def __str__(self):
         return self.name
@@ -257,6 +259,7 @@ def open(name):
 
 def close():
     return DWFile.close()
+
 # Load and initialize the DLL
 loadDLL()
 
