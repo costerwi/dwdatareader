@@ -17,4 +17,12 @@ setup(name='dwdatareader',
       license='MIT',
       packages=['dwdatareader'],
       package_data={'dwdatareader': ['*.dll']},
+      classifiers = [
+         "Intended Audience :: Science/Research",
+         "Topic :: Scientific/Engineering :: Information Analysis",
+         "Programming Language :: Python :: 2.7",
+         "Programming Language :: Python :: 3",
+         "Operating System :: Microsoft :: Windows",
+         "Development Status :: 4 - Beta",
+         ],
      )
