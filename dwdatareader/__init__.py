@@ -62,7 +62,12 @@ class DWEvent(ctypes.Structure):
     _pack_ = 1
     _fields_ = [("event_type", ctypes.c_int),
                 ("time_stamp", ctypes.c_double),
-                ("event_text", ctypes.c_char * 200)]
+                ("_event_text", ctypes.c_char * 200)]
+
+    @property
+    def event_text(self):
+        return self._event_text.decode()
+
     def __str__(self):
         return "{0.time_stamp} {0.event_text}".format(self)
         
@@ -71,16 +76,27 @@ class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
     _pack_ = 1
     _fields_ = [("index", ctypes.c_int),
-                ("name", ctypes.c_char * 100),
-                ("unit", ctypes.c_char * 20),
-                ("description", ctypes.c_char * 200),
+                ("_name", ctypes.c_char * 100),
+                ("_unit", ctypes.c_char * 20),
+                ("_description", ctypes.c_char * 200),
                 ("color" , ctypes.c_uint),
                 ("array_size", ctypes.c_int)]
     
+    @property
+    def name(self):
+        return self._name.decode()
+
+    @property
+    def unit(self):
+        return self._unit.decode()
+
+    @property
+    def description(self):
+        return self._description.decode()
+
     def __str__(self):
-        return "{0} ({1}) {2}".format(self.name.decode(), self.unit.decode(),
-            self.description.decode())
-        
+        return "{0.name} ({0.unit}) {0.description}".format(self)
+
     def scaled(self):
         """Load full speed data"""
         import numpy
@@ -119,12 +135,12 @@ class DWChannel(ctypes.Structure):
             time = [i.time_stamp for i in r]
             data = [i.ave for i in r]
         return pandas.Series(data = data, index = time, 
-                             name = self.name.decode())
+                             name = self.name)
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
         ax = self.series().plot(*args, **kwargs)
-        ax.set_ylabel(self.unit.decode())
+        ax.set_ylabel(self.unit)
         return ax
 
 
@@ -189,7 +205,7 @@ class DWFile(collections.Mapping):
             for e in events_:
                 time_stamp.append(e.time_stamp)
                 event_type.append(e.event_type)
-                event_text.append(e.event_text.decode())
+                event_text.append(e.event_text)
         return pandas.DataFrame(
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
@@ -212,13 +228,13 @@ class DWFile(collections.Mapping):
 
     def __getitem__(self, key):
         for ch in self.channels: # brute force lookup
-            if ch.index == key or ch.name == key.encode():
+            if ch.index == key or ch.name == key:
                 return ch
         raise KeyError(key)
                 
     def __iter__(self):
         for ch in self.channels:
-            yield ch.name.decode()
+            yield ch.name
             
     def __str__(self):
         return self.name
