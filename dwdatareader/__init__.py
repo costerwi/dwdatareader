@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print ch.name, ch.series().mean()
 """
 __all__ = ['DWError', 'DWFile']
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 DLL = None # module variable accessible to other classes 
 
@@ -32,18 +32,19 @@ class DWInfo(ctypes.Structure):
     """Structure to hold metadata about DWFile"""
     _pack_ = 1
     _fields_ = [("sample_rate", ctypes.c_double),
-                ("start_store_time", ctypes.c_double),
+                ("_start_store_time", ctypes.c_double),
                 ("duration", ctypes.c_double)]
 
     def __str__(self):
         return "{0.start_store_time} {0.sample_rate} Hz {0.duration} s".format(self)
-        
-    def datetime(self):
+
+    @property
+    def start_store_time(self):
         """Return start_store_time in Python datetime format"""
         import datetime
         import pytz
         epoch = datetime.datetime(1899, 12, 30, tzinfo=pytz.utc)
-        return epoch + datetime.timedelta(self.start_store_time)
+        return epoch + datetime.timedelta(self._start_store_time)
 
 
 class DWReducedValue(ctypes.Structure):
