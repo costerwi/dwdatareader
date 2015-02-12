@@ -5,17 +5,18 @@
 Example usage:
 import dwdatareader as dw
 with dw.open('myfile.d7d') as f:
-    print f.info
+    print(f.info)
     ch1 = f['chname1'].series()
     ch1.plot()
     for ch in f.values():
-        print ch.name, ch.series().mean()
+        print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile']
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 DLL = None # module variable accessible to other classes 
 
+import os
 import collections
 import ctypes
 
@@ -148,23 +149,32 @@ class DWChannel(ctypes.Structure):
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
 
-    closed = True  # bool indicating the current state of the file object  
+    name = ''      # Name of the open file
+    closed = True  # bool indicating the current state of the file object
+    delete = False # Whether to remove file when closed
     
-    def __init__(self, name = None):
-        if name:
-            self.open(name)
+    def __init__(self, source = None):
+        if source:
+            self.open(source)
 
-    def open(self, name = None):
+    def open(self, source):
         """Open the specified file and read channel headers"""
         
-        if not name:
-            name = self.name # reopen previous file
+        import tempfile
+        if hasattr(source, 'read'): # source is a file-like object
+            temp_fd, DWFile.name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
+            with os.fdopen(temp_fd, mode='wb') as ts:
+                ts.write(source.read()) # Make a temporary copy
+            DWFile.delete = True
+        else:   # assume source is a str filename
+            DWFile.name = source
+            DWFile.delete = False
+
         info = DWInfo()
-        stat = DLL.DWOpenDataFile(name.encode(), info)
+        stat = DLL.DWOpenDataFile(DWFile.name.encode(), info)
         if stat:
             raise DWError(stat)
         DWFile.closed = False
-        self.name = name
         self.info = info
 
         # Read file header section
@@ -223,7 +233,10 @@ class DWFile(collections.Mapping):
     def close(cls):
         DLL.DWCloseDataFile()
         cls.closed = True
-        
+        if cls.delete:
+            os.remove(cls.name)
+            cls.delete = False
+
     def __len__(self):
         return len(self.channels)
 
@@ -250,12 +263,12 @@ class DWFile(collections.Mapping):
 
 # Define module methods
 def loadDLL(dllName = ''):
-    import os
     import platform
     import atexit
     
     global DLL
     if not dllName:
+        # Determine appropriate library to load
         if platform.architecture()[0] == '32bit':
             dllName = os.path.join(os.path.dirname(__file__),
                 "DWDataReaderLib")
@@ -271,8 +284,8 @@ def loadDLL(dllName = ''):
 def unloadDLL():
     DLL.DWDeInit()
 
-def open(name):
-    return DWFile(name)
+def open(source):
+    return DWFile(source)
 
 def close():
     return DWFile.close()
