@@ -17,5 +17,5 @@ with dw.open('myfile.d7d') as f:
     ch1 = f['chname1'].series()
     ch1.plot()
     for ch in f.values():
-        print(ch.name.decode(), ch.series().mean())
+        print(ch.name, ch.series().mean())
 ```
