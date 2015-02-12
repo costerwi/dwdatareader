@@ -142,7 +142,6 @@ class DWChannel(ctypes.Structure):
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
 
-        kwargs.setdefault('label', self.name)
         ax = self.series().plot(*args, **kwargs)
         ax.set_ylabel(self.unit)
         return ax
