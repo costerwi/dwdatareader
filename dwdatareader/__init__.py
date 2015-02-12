@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile']
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 DLL = None # module variable accessible to other classes 
 
@@ -162,18 +162,20 @@ class DWFile(collections.Mapping):
         
         import tempfile
         if hasattr(source, 'read'): # source is a file-like object
-            temp_fd, DWFile.name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
+            temp_fd, name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
             with os.fdopen(temp_fd, mode='wb') as ts:
                 ts.write(source.read()) # Make a temporary copy
             DWFile.delete = True
         else:   # assume source is a str filename
-            DWFile.name = source
+            name = source
             DWFile.delete = False
 
         info = DWInfo()
-        stat = DLL.DWOpenDataFile(DWFile.name.encode(), info)
+        stat = DLL.DWOpenDataFile(name.encode(), info)
         if stat:
             raise DWError(stat)
+        # Successfully open: now update class members
+        DWFile.name = name
         DWFile.closed = False
         self.info = info
 
