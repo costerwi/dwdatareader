@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile']
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 DLL = None # module variable accessible to other classes 
 
@@ -24,7 +24,7 @@ class DWError(RuntimeError):
     """Interpret error number returned from dll"""
     errors = ["status OK", "error in DLL", "cannot open d7d file",
             "file already in use", "d7d file corrupt", "memory allocation"]
-            
+
     def __init__(self, value):
         super(DWError, self).__init__(self.errors[value])
 
@@ -55,7 +55,7 @@ class DWReducedValue(ctypes.Structure):
                 ("min", ctypes.c_double),
                 ("max", ctypes.c_double),
                 ("rms", ctypes.c_double)]
-                
+
     def __str__(self):
         return "{0.time_stamp} {0.ave} ave".format(self)
 
@@ -72,8 +72,8 @@ class DWEvent(ctypes.Structure):
 
     def __str__(self):
         return "{0.time_stamp} {0.event_text}".format(self)
-        
-    
+
+
 class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
     _pack_ = 1
@@ -83,7 +83,7 @@ class DWChannel(ctypes.Structure):
                 ("_description", ctypes.c_char * 200),
                 ("color" , ctypes.c_uint),
                 ("array_size", ctypes.c_int)]
-    
+
     @property
     def name(self):
         return self._name.decode()
@@ -111,7 +111,7 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         return time, data
-        
+
     def reduced(self):
         """Load reduced (averaged) data"""
         count = ctypes.c_int()
@@ -126,7 +126,7 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         return data
-        
+
     def series(self):
         """Load and return timeseries of results for channel"""
         import pandas
@@ -141,6 +141,8 @@ class DWChannel(ctypes.Structure):
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
+
+        kwargs.setdefault('label', self.name)
         ax = self.series().plot(*args, **kwargs)
         ax.set_ylabel(self.unit)
         return ax
@@ -152,14 +154,14 @@ class DWFile(collections.Mapping):
     name = ''      # Name of the open file
     closed = True  # bool indicating the current state of the file object
     delete = False # Whether to remove file when closed
-    
+
     def __init__(self, source = None):
         if source:
             self.open(source)
 
     def open(self, source):
         """Open the specified file and read channel headers"""
-        
+
         import tempfile
         if hasattr(source, 'read'): # source is a file-like object
             temp_fd, name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
@@ -195,14 +197,14 @@ class DWFile(collections.Mapping):
                 if stat:
                     raise DWError(stat)
                 self.header[name_.value.decode()] = text
-            
+
         # Read channel metadata
         nchannels = DLL.DWGetChannelListCount()
         self.channels = (DWChannel * nchannels)()
         stat = DLL.DWGetChannelList(self.channels)
         if stat:
             raise DWError(stat)
-            
+
     def events(self):
         """Load and return timeseries of file events"""
         import pandas
@@ -230,7 +232,7 @@ class DWFile(collections.Mapping):
         for key in columns:
             d[key] = self[key].series()
         return pandas.DataFrame(d)
-        
+
     @classmethod
     def close(cls):
         DLL.DWCloseDataFile()
@@ -247,14 +249,14 @@ class DWFile(collections.Mapping):
             if ch.index == key or ch.name == key:
                 return ch
         raise KeyError(key)
-                
+
     def __iter__(self):
         for ch in self.channels:
             yield ch.name
-            
+
     def __str__(self):
         return self.name
-        
+
     def __enter__(self):
         """Used to maintain file in context"""
         return self
@@ -263,11 +265,12 @@ class DWFile(collections.Mapping):
         """Close file when it goes out of context"""
         self.close()
 
+
 # Define module methods
 def loadDLL(dllName = ''):
     import platform
     import atexit
-    
+
     global DLL
     if not dllName:
         # Determine appropriate library to load
@@ -282,15 +285,19 @@ def loadDLL(dllName = ''):
     if stat:
         raise DWError(stat)
     atexit.register(unloadDLL)
-        
+
+
 def unloadDLL():
     DLL.DWDeInit()
+
 
 def open(source):
     return DWFile(source)
 
+
 def close():
     return DWFile.close()
+
 
 # Load and initialize the DLL
 loadDLL()
