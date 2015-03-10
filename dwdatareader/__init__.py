@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile']
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 
 DLL = None # module variable accessible to other classes 
 
@@ -129,9 +129,13 @@ class DWChannel(ctypes.Structure):
 
     def series(self):
         """Load and return timeseries of results for channel"""
+        import numpy
         import pandas
         time, data = self.scaled()
-        if not len(data):
+        if len(data):
+            time, ix = numpy.unique(time, return_index=True)
+            data = data[ix] # Remove duplicate times
+        else:
             # Use reduced data if scaled is not available
             r = self.reduced()
             time = [i.time_stamp for i in r]
