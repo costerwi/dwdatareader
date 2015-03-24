@@ -11,8 +11,8 @@ with dw.open('myfile.d7d') as f:
     for ch in f.values():
         print(ch.name, ch.series().mean())
 """
-__all__ = ['DWError', 'DWFile']
-__version__ = '0.7.4'
+__all__ = ['DWError', 'DWFile', 'getVersion']
+__version__ = '0.7.5'
 
 DLL = None # module variable accessible to other classes 
 
@@ -288,6 +288,10 @@ def loadDLL(dllName = ''):
     if stat:
         raise DWError(stat)
     atexit.register(unloadDLL)
+
+
+def getVersion():
+    return DLL.DWGetVersion()
 
 
 def unloadDLL():
