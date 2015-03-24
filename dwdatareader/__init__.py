@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.5'
+__version__ = '0.7.6'
 
 DLL = None # module variable accessible to other classes 
 
@@ -176,7 +176,7 @@ class DWFile(collections.Mapping):
             DWFile.delete = False
 
         info = DWInfo()
-        stat = DLL.DWOpenDataFile(name.encode(), info)
+        stat = DLL.DWOpenDataFile(name.encode(), ctypes.byref(info))
         if stat:
             raise DWError(stat)
         # Successfully open: now update class members
