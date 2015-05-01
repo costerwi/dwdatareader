@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 DLL = None # module variable accessible to other classes 
 
@@ -68,6 +68,7 @@ class DWEvent(ctypes.Structure):
 
     @property
     def event_text(self):
+        """Readable description of the event"""
         return self._event_text.decode()
 
     def __str__(self):
@@ -86,21 +87,24 @@ class DWChannel(ctypes.Structure):
 
     @property
     def name(self):
+        """An idenfitying name of the channel"""
         return self._name.decode()
 
     @property
     def unit(self):
+        """The unit of measurement used by the channel"""
         return self._unit.decode()
 
     @property
     def description(self):
+        """A short explanation of what the channel measures"""
         return self._description.decode()
 
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
     def scaled(self):
-        """Load full speed data"""
+        """Load and return full speed data as [time, data]"""
         import numpy
         count = DLL.DWGetScaledSamplesCount(self.index)
         data = numpy.empty(count, dtype=numpy.double)
