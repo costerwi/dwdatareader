@@ -228,11 +228,14 @@ class DWFile(collections.Mapping):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
-    def dataframe(self, columns):
+    def dataframe(self, channels = None):
         """Return dataframe of selected series"""
         import pandas
+        if not channels:
+            # Return dataframe of ALL channels by default
+            columns = self.keys()
         d = {}
-        for key in columns:
+        for key in channels:
             d[key] = self[key].series()
         return pandas.DataFrame(d)
 
