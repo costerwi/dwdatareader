@@ -16,7 +16,7 @@ setup(name='dwdatareader',
       url='https://github.com/costerwi/dwdatareader/',
       license='MIT',
       packages=['dwdatareader'],
-      package_data={'dwdatareader': ['*.dll']},
+      package_data={'dwdatareader': ['DW*.dll', 'DW*.so]},
       classifiers = [
          "Intended Audience :: Science/Research",
          "Topic :: Scientific/Engineering :: Information Analysis",
