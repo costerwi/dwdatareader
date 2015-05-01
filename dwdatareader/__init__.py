@@ -277,12 +277,12 @@ def loadDLL(dllName = ''):
     global DLL
     if not dllName:
         # Determine appropriate library to load
-        if platform.architecture()[0] == '32bit':
-            dllName = os.path.join(os.path.dirname(__file__),
-                "DWDataReaderLib")
-        else:
-            dllName = os.path.join(os.path.dirname(__file__),
-                "DWDataReaderLib64")
+        dllName = os.path.join(os.path.dirname(__file__),
+            "DWDataReaderLib")
+        if platform.architecture()[0] == '64bit':
+            dllName += "64"
+        if platform.system() == 'Linux':
+            dllName += ".so"
     DLL = ctypes.cdll.LoadLibrary(dllName)
     stat = DLL.DWInit()
     if stat:
