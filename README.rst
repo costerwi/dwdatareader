@@ -4,14 +4,14 @@ dwdatareader
 Python module to interact with Dewesoft DWDataReaderLib shared library
 available from http://www.dewesoft.com/developers
 
-Installation:
-
+Installation
+------------
 ::
 
     pip install http://github.com/costerwi/dwdatareader/tarball/master
 
-Example usage:
-
+Example usage
+-------------
 .. code:: python
 
     import dwdatareader as dw
