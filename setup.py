@@ -24,6 +24,7 @@ setup(name='dwdatareader',
          "Programming Language :: Python :: 2.7",
          "Programming Language :: Python :: 3",
          "Operating System :: Microsoft :: Windows",
+         "Operating System :: POSIX :: Linux",
          "Development Status :: 4 - Beta",
          ],
      )
