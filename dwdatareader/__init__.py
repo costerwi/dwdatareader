@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.8'
+__version__ = '0.7.9'
 
 DLL = None # module variable accessible to other classes 
 
@@ -237,7 +237,7 @@ class DWFile(collections.Mapping):
         import pandas
         if not channels:
             # Return dataframe of ALL channels by default
-            columns = self.keys()
+            channels = self.keys()
         d = {}
         for key in channels:
             d[key] = self[key].series()
@@ -271,7 +271,7 @@ class DWFile(collections.Mapping):
         """Used to maintain file in context"""
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exception_type, exception_value, traceback):
         """Close file when it goes out of context"""
         self.close()
 
