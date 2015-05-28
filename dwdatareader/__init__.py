@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.9'
+__version__ = '0.7.10'
 
 DLL = None # module variable accessible to other classes 
 
@@ -167,7 +167,7 @@ class DWFile(collections.Mapping):
             self.open(source)
 
     def open(self, source):
-        """Open the specified file and read channel headers"""
+        """Open the specified file and read channel metadata"""
 
         import tempfile
         if hasattr(source, 'read'): # source is a file-like object
@@ -188,8 +188,18 @@ class DWFile(collections.Mapping):
         DWFile.closed = False
         self.info = info
 
-        # Read file header section
-        self.header = dict()
+        # Read channel metadata
+        nchannels = DLL.DWGetChannelListCount()
+        self.channels = (DWChannel * nchannels)()
+        stat = DLL.DWGetChannelList(self.channels)
+        if stat:
+            self.close() # if open() fails then the file should be closed
+            raise DWError(stat)
+
+    @property
+    def header(self):
+        """Read file header section"""
+        h = dict()
         name_ = ctypes.create_string_buffer(100)
         text_ = ctypes.create_string_buffer(200)
         nHeaders = DLL.DWGetHeaderEntryCount()
@@ -203,14 +213,8 @@ class DWFile(collections.Mapping):
                 stat = DLL.DWGetHeaderEntryNameF(i, name_, len(name_))
                 if stat:
                     raise DWError(stat)
-                self.header[name_.value.decode()] = text
-
-        # Read channel metadata
-        nchannels = DLL.DWGetChannelListCount()
-        self.channels = (DWChannel * nchannels)()
-        stat = DLL.DWGetChannelList(self.channels)
-        if stat:
-            raise DWError(stat)
+                h[name_.value.decode()] = text
+        return h
 
     def events(self):
         """Load and return timeseries of file events"""
