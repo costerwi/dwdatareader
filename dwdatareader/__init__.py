@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.10'
+__version__ = '0.7.11'
 
 DLL = None # module variable accessible to other classes 
 
@@ -22,8 +22,10 @@ import ctypes
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
-    errors = ["status OK", "error in DLL", "cannot open d7d file",
-            "file already in use", "d7d file corrupt", "memory allocation"]
+    errors = ("status OK", "error in DLL", "cannot open d7d file",
+            "file already in use", "d7d file corrupt", "memory allocation",
+            "creating uncompressed file", "extracting data",
+            "opening uncompressed file")
 
     def __init__(self, value):
         super(DWError, self).__init__(self.errors[value])
@@ -173,8 +175,8 @@ class DWFile(collections.Mapping):
         if hasattr(source, 'read'): # source is a file-like object
             temp_fd, name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
             with os.fdopen(temp_fd, mode='wb') as ts:
+                DWFile.delete = True
                 ts.write(source.read()) # Make a temporary copy
-            DWFile.delete = True
         else:   # assume source is a str filename
             name = source
             DWFile.delete = False
