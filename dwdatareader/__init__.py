@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.7.11'
+__version__ = '0.8.0'
 
 DLL = None # module variable accessible to other classes 
 
@@ -160,34 +160,52 @@ class DWChannel(ctypes.Structure):
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
 
-    name = ''      # Name of the open file
-    closed = True  # bool indicating the current state of the file object
-    delete = False # Whether to remove file when closed
-
     def __init__(self, source = None):
+        self.name = ''      # Name of the open file
+        self.closed = True  # bool indicating the current state of the reader
+        self.delete = False # Whether to remove file when closed
+
+        num_readers = ctypes.c_int()
+        stat = DLL.DWGetNumReaders(ctypes.pointer(num_readers))
+        if stat:
+            raise DWError(stat)
+        self.readerID = num_readers.value - 1
+
         if source:
-            self.open(source)
+            self.open(source) # If this fails then the instance is not constructed
+
+        stat = DLL.DWAddReader()  # Add reader to be used by next DWFile instance
+        if stat:
+            raise DWError(stat)
+
+    def activate(self):
+        """Set this DWFile instance as the active reader"""
+        stat = DLL.DWSetActiveReader(self.readerID)
+        if stat:
+            raise DWError(stat)
 
     def open(self, source):
         """Open the specified file and read channel metadata"""
 
         import tempfile
+        self.activate()
         if hasattr(source, 'read'): # source is a file-like object
             temp_fd, name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
             with os.fdopen(temp_fd, mode='wb') as ts:
-                DWFile.delete = True
+                self.delete = True
                 ts.write(source.read()) # Make a temporary copy
         else:   # assume source is a str filename
             name = source
-            DWFile.delete = False
+            self.delete = False
 
         info = DWInfo()
         stat = DLL.DWOpenDataFile(name.encode(), ctypes.byref(info))
         if stat:
             raise DWError(stat)
+
         # Successfully open: now update class members
-        DWFile.name = name
-        DWFile.closed = False
+        self.name = name
+        self.closed = False
         self.info = info
 
         # Read channel metadata
@@ -201,6 +219,7 @@ class DWFile(collections.Mapping):
     @property
     def header(self):
         """Read file header section"""
+        self.activate()
         h = dict()
         name_ = ctypes.create_string_buffer(100)
         text_ = ctypes.create_string_buffer(200)
@@ -221,6 +240,7 @@ class DWFile(collections.Mapping):
     def events(self):
         """Load and return timeseries of file events"""
         import pandas
+        self.activate()
         time_stamp = []
         event_type = []
         event_text = []
@@ -249,13 +269,16 @@ class DWFile(collections.Mapping):
             d[key] = self[key].series()
         return pandas.DataFrame(d)
 
-    @classmethod
-    def close(cls):
-        DLL.DWCloseDataFile()
-        cls.closed = True
-        if cls.delete:
-            os.remove(cls.name)
-            cls.delete = False
+    def close(self):
+        """Close the d7d file and delete it if temporary"""
+        if not self.closed:
+            # Attempting to close an already closed reader seems to crash the DLL
+            self.activate()
+            DLL.DWCloseDataFile()
+            self.closed = True
+        if self.delete:
+            os.remove(self.name)
+            self.delete = False
 
     def __len__(self):
         return len(self.channels)
@@ -313,10 +336,6 @@ def unloadDLL():
 
 def open(source):
     return DWFile(source)
-
-
-def close():
-    return DWFile.close()
 
 
 # Load and initialize the DLL
