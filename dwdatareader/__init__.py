@@ -176,6 +176,7 @@ class DWFile(collections.Mapping):
 
         stat = DLL.DWAddReader()  # Add reader to be used by next DWFile instance
         if stat:
+            self.close()
             raise DWError(stat)
 
     def activate(self):
@@ -189,32 +190,32 @@ class DWFile(collections.Mapping):
 
         import tempfile
         self.activate()
-        if hasattr(source, 'read'): # source is a file-like object
-            temp_fd, name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
-            with os.fdopen(temp_fd, mode='wb') as ts:
+        try:
+            if hasattr(source, 'read'): # source is a file-like object
+                temp_fd, self.name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
                 self.delete = True
-                ts.write(source.read()) # Make a temporary copy
-        else:   # assume source is a str filename
-            name = source
-            self.delete = False
+                with os.fdopen(temp_fd, mode='wb') as ts:
+                    ts.write(source.read()) # Make a temporary copy
+            else:   # assume source is a str filename
+                self.name = source
+                self.delete = False
 
-        info = DWInfo()
-        stat = DLL.DWOpenDataFile(name.encode(), ctypes.byref(info))
-        if stat:
-            raise DWError(stat)
+            # Open the d7d file
+            self.info = DWInfo()
+            stat = DLL.DWOpenDataFile(self.name.encode(), ctypes.byref(self.info))
+            if stat:
+                raise DWError(stat)
+            self.closed = False
 
-        # Successfully open: now update class members
-        self.name = name
-        self.closed = False
-        self.info = info
-
-        # Read channel metadata
-        nchannels = DLL.DWGetChannelListCount()
-        self.channels = (DWChannel * nchannels)()
-        stat = DLL.DWGetChannelList(self.channels)
-        if stat:
+            # Read channel metadata
+            nchannels = DLL.DWGetChannelListCount()
+            self.channels = (DWChannel * nchannels)()
+            stat = DLL.DWGetChannelList(self.channels)
+            if stat:
+                raise DWError(stat)
+        except:
             self.close() # if open() fails then the file should be closed
-            raise DWError(stat)
+            raise
 
     @property
     def header(self):
