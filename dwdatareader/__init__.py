@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.8.0'
+__version__ = '0.9.0'
 
 DLL = None # module variable accessible to other classes 
 
@@ -265,10 +265,7 @@ class DWFile(collections.Mapping):
         if not channels:
             # Return dataframe of ALL channels by default
             channels = self.keys()
-        d = {}
-        for key in channels:
-            d[key] = self[key].series()
-        return pandas.DataFrame(d)
+        return pandas.DataFrame({k: self[k].series() for k in channels})
 
     def close(self):
         """Close the d7d file and delete it if temporary"""
