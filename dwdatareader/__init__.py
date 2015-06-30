@@ -133,6 +133,29 @@ class DWChannel(ctypes.Structure):
             raise DWError(stat)
         return data
 
+    def series(self):
+        """Load and return timeseries of results for channel"""
+        import numpy
+        import pandas
+        time, data = self.scaled()
+        if len(data):
+            time, ix = numpy.unique(time, return_index=True)
+            data = data[ix] # Remove duplicate times
+        else:
+            # Use reduced data if scaled is not available
+            r = self.reduced()
+            time = [i.time_stamp for i in r]
+            data = [i.ave for i in r]
+        return pandas.Series(data = data, index = time, 
+                             name = self.name)
+
+    def plot(self, *args, **kwargs):
+        """Plot the data as a series"""
+
+        ax = self.series().plot(*args, **kwargs)
+        ax.set_ylabel(self.unit)
+        return ax
+
 
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
@@ -235,23 +258,6 @@ class DWFile(collections.Mapping):
         return pandas.DataFrame(
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
-
-    def series(self, channel):
-        """Load and return timeseries of results for channel"""
-        import numpy
-        import pandas
-        self.activate()
-        time, data = self[channel].scaled()
-        if len(data):
-            time, ix = numpy.unique(time, return_index=True)
-            data = data[ix] # Remove duplicate times
-        else:
-            # Use reduced data if scaled is not available
-            r = self[channel].reduced()
-            time = [i.time_stamp for i in r]
-            data = [i.ave for i in r]
-        return pandas.Series(data = data, index = time, 
-                             name = self.name)
 
     def dataframe(self, channels = None):
         """Return dataframe of selected series"""
