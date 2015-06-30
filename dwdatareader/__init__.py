@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 DLL = None # module variable accessible to other classes 
 
