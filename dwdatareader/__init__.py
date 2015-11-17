@@ -111,7 +111,7 @@ class DWChannel(ctypes.Structure):
         count = DLL.DWGetScaledSamplesCount(self.index)
         data = numpy.empty(count, dtype=numpy.double)
         time = numpy.empty_like(data)
-        stat = DLL.DWGetScaledSamples(self.index, 0, count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
                 data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                 time.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
         if stat:
@@ -165,19 +165,19 @@ class DWFile(collections.Mapping):
         self.closed = True  # bool indicating the current state of the reader
         self.delete = False # Whether to remove file when closed
 
+        stat = DLL.DWAddReader()  # Add reader to be used by next DWFile instance
+        if stat:
+            self.close()
+            raise DWError(stat)
+            
         num_readers = ctypes.c_int()
         stat = DLL.DWGetNumReaders(ctypes.pointer(num_readers))
         if stat:
             raise DWError(stat)
         self.readerID = num_readers.value - 1
-
+        
         if source:
             self.open(source) # If this fails then the instance is not constructed
-
-        stat = DLL.DWAddReader()  # Add reader to be used by next DWFile instance
-        if stat:
-            self.close()
-            raise DWError(stat)
 
     def activate(self):
         """Set this DWFile instance as the active reader"""
@@ -201,16 +201,19 @@ class DWFile(collections.Mapping):
                 self.delete = False
 
             # Open the d7d file
-            self.info = DWInfo()
+            self.info = DWInfo(0, 0, 0)
             stat = DLL.DWOpenDataFile(self.name.encode(), ctypes.byref(self.info))
             if stat:
                 raise DWError(stat)
             self.closed = False
 
             # Read channel metadata
-            nchannels = DLL.DWGetChannelListCount()
+            nchannels = DLL.DWGetChannelListCount()        
+            if nchannels == -1:
+                DWError("DWDataReader: DWGetChannelListCount() failed")
+    
             self.channels = (DWChannel * nchannels)()
-            stat = DLL.DWGetChannelList(self.channels)
+            stat = DLL.DWGetChannelList(ctypes.byref(self.channels))
             if stat:
                 raise DWError(stat)
         except:
@@ -330,6 +333,8 @@ def getVersion():
 
 def unloadDLL():
     DLL.DWDeInit()
+    ctypes.FreeLibrary(DLL._handle)
+    del DLL
 
 
 def open(source):
