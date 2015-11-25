@@ -109,6 +109,9 @@ class DWChannel(ctypes.Structure):
         """Load and return full speed data as [time, data]"""
         import numpy
         count = DLL.DWGetScaledSamplesCount(self.index)
+        if count < 0:
+            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
+                self.index, count))
         data = numpy.empty(count, dtype=numpy.double)
         time = numpy.empty_like(data)
         stat = DLL.DWGetScaledSamples(self.index, 0, count,
