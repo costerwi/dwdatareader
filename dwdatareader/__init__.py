@@ -147,8 +147,7 @@ class DWChannel(ctypes.Structure):
         else:
             # Use reduced data if scaled is not available
             r = self.reduced()
-            time = [i.time_stamp for i in r]
-            data = [i.ave for i in r]
+            time, data = zip(*[(i.time_stamp, i.ave) for i in r])
         return pandas.Series(data = data, index = time, 
                              name = self.name)
 
