@@ -126,12 +126,12 @@ class DWChannel(ctypes.Structure):
         count = ctypes.c_int()
         block_size = ctypes.c_double()
         stat = DLL.DWGetReducedValuesCount(self.index, 
-            ctypes.pointer(count), ctypes.pointer(block_size))
+            ctypes.byref(count), ctypes.byref(block_size))
         if stat:
             raise DWError(stat)
         data = (DWReducedValue * count.value)()
         stat = DLL.DWGetReducedValues(self.index, 0, count,
-                ctypes.pointer(data))
+                ctypes.byref(data))
         if stat:
             raise DWError(stat)
         return data
@@ -147,8 +147,7 @@ class DWChannel(ctypes.Structure):
         else:
             # Use reduced data if scaled is not available
             r = self.reduced()
-            time = [i.time_stamp for i in r]
-            data = [i.ave for i in r]
+            time, data = zip(*[(i.time_stamp, i.ave) for i in r])
         return pandas.Series(data = data, index = time, 
                              name = self.name)
 
@@ -169,7 +168,7 @@ class DWFile(collections.Mapping):
         self.delete = False # Whether to remove file when closed
 
         num_readers = ctypes.c_int()
-        stat = DLL.DWGetNumReaders(ctypes.pointer(num_readers))
+        stat = DLL.DWGetNumReaders(ctypes.byref(num_readers))
         if stat:
             raise DWError(stat)
         self.readerID = num_readers.value - 1
