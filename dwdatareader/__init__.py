@@ -338,7 +338,9 @@ def getVersion():
 
 
 def unloadDLL():
+    global DLL
     DLL.DWDeInit()
+    DLL = None # Release reference to DLL
 
 
 def open(source):
