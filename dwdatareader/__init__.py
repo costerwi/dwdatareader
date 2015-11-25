@@ -109,6 +109,9 @@ class DWChannel(ctypes.Structure):
         """Load and return full speed data as [time, data]"""
         import numpy
         count = DLL.DWGetScaledSamplesCount(self.index)
+        if count < 0:
+            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
+                self.index, count))
         data = numpy.empty(count, dtype=numpy.double)
         time = numpy.empty_like(data)
         stat = DLL.DWGetScaledSamples(self.index, 0, count,
@@ -179,8 +182,10 @@ class DWFile(collections.Mapping):
             self.close()
             raise DWError(stat)
 
-    def activate(self):
+    def activate(self, verifyOpen=True):
         """Set this DWFile instance as the active reader"""
+        if verifyOpen and self.closed:
+            raise ValueError('I/O operation on closed file.')
         stat = DLL.DWSetActiveReader(self.readerID)
         if stat:
             raise DWError(stat)
@@ -189,7 +194,8 @@ class DWFile(collections.Mapping):
         """Open the specified file and read channel metadata"""
 
         import tempfile
-        self.activate()
+        self.close() # ensure any previous file has been closed
+        self.activate(verifyOpen=False)
         try:
             if hasattr(source, 'read'): # source is a file-like object
                 temp_fd, self.name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
@@ -262,6 +268,7 @@ class DWFile(collections.Mapping):
     def dataframe(self, channels = None):
         """Return dataframe of selected series"""
         import pandas
+        self.activate()
         if not channels:
             # Return dataframe of ALL channels by default
             channels = self.keys()
@@ -274,6 +281,7 @@ class DWFile(collections.Mapping):
             self.activate()
             DLL.DWCloseDataFile()
             self.closed = True
+            self.channels = (DWChannel * 0)() # Delete channel metadata
         if self.delete:
             os.remove(self.name)
             self.delete = False
@@ -284,6 +292,7 @@ class DWFile(collections.Mapping):
     def __getitem__(self, key):
         for ch in self.channels: # brute force lookup
             if ch.index == key or ch.name == key:
+                self.activate()
                 return ch
         raise KeyError(key)
 
@@ -329,7 +338,9 @@ def getVersion():
 
 
 def unloadDLL():
+    global DLL
     DLL.DWDeInit()
+    DLL = None # Release reference to DLL
 
 
 def open(source):
