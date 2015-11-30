@@ -289,9 +289,9 @@ class DWFile(collections.Mapping):
         return len(self.channels)
 
     def __getitem__(self, key):
+        self.activate()
         for ch in self.channels: # brute force lookup
             if ch.index == key or ch.name == key:
-                self.activate()
                 return ch
         raise KeyError(key)
 
