@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.9.2'
+__version__ = '0.10.0'
 
 DLL = None # module variable accessible to other classes 
 
@@ -48,18 +48,6 @@ class DWInfo(ctypes.Structure):
         import pytz
         epoch = datetime.datetime(1899, 12, 30, tzinfo=pytz.utc)
         return epoch + datetime.timedelta(self._start_store_time)
-
-
-class DWReducedValue(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("time_stamp", ctypes.c_double),
-                ("ave", ctypes.c_double),
-                ("min", ctypes.c_double),
-                ("max", ctypes.c_double),
-                ("rms", ctypes.c_double)]
-
-    def __str__(self):
-        return "{0.time_stamp} {0.ave} ave".format(self)
 
 
 class DWEvent(ctypes.Structure):
@@ -106,8 +94,9 @@ class DWChannel(ctypes.Structure):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
     def scaled(self):
-        """Load and return full speed data as [time, data]"""
+        """Load and return full speed data as Pandas Series"""
         import numpy
+        import pandas
         count = DLL.DWGetScaledSamplesCount(self.index)
         if count < 0:
             raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
@@ -115,41 +104,50 @@ class DWChannel(ctypes.Structure):
         data = numpy.empty(count, dtype=numpy.double)
         time = numpy.empty_like(data)
         stat = DLL.DWGetScaledSamples(self.index, 0, count,
-                data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                time.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+                data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
-        return time, data
+
+        time, ix = numpy.unique(time, return_index=True) # use unique times
+        return pandas.Series(data = data[ix], index = time, name = self.name)
 
     def reduced(self):
-        """Load reduced (averaged) data"""
+        """Load reduced (averaged) data as Pandas DataFrame"""
+        import numpy as np
+        import pandas
         count = ctypes.c_int()
         block_size = ctypes.c_double()
         stat = DLL.DWGetReducedValuesCount(self.index, 
             ctypes.byref(count), ctypes.byref(block_size))
         if stat:
             raise DWError(stat)
-        data = (DWReducedValue * count.value)()
-        stat = DLL.DWGetReducedValues(self.index, 0, count,
-                ctypes.byref(data))
+
+        # Define numpy structured data type to hold DWReducedValue
+        reducedDtype = np.dtype([
+                ('time_stamp', np.double),
+                ('ave', np.double),
+                ('min', np.double),
+                ('max', np.double),
+                ('rms', np.double)
+            ])
+
+        # Allocate memory and retrieve data
+        data = np.empty(count.value, dtype=reducedDtype)
+        stat = DLL.DWGetReducedValues(self.index, 0, count, data.ctypes)
         if stat:
             raise DWError(stat)
-        return data
+
+        return pandas.DataFrame(data, index=data['time_stamp'],
+                columns=['ave', 'min', 'max', 'rms'])
 
     def series(self):
         """Load and return timeseries of results for channel"""
-        import numpy
-        import pandas
-        time, data = self.scaled()
-        if len(data):
-            time, ix = numpy.unique(time, return_index=True)
-            data = data[ix] # Remove duplicate times
-        else:
-            # Use reduced data if scaled is not available
-            r = self.reduced()
-            time, data = zip(*[(i.time_stamp, i.ave) for i in r])
-        return pandas.Series(data = data, index = time, 
-                             name = self.name)
+        data = self.scaled()
+        if data.empty:
+            # Use average reduced data if scaled is not available
+            data = self.reduced()['ave']
+            data.name = self.name
+        return data
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
@@ -289,9 +287,9 @@ class DWFile(collections.Mapping):
         return len(self.channels)
 
     def __getitem__(self, key):
+        self.activate()
         for ch in self.channels: # brute force lookup
             if ch.index == key or ch.name == key:
-                self.activate()
                 return ch
         raise KeyError(key)
 
