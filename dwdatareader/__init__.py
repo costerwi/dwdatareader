@@ -90,6 +90,10 @@ class DWChannel(ctypes.Structure):
         """A short explanation of what the channel measures"""
         return self._description.decode()
 
+    @property
+    def number_of_samples(self):
+        return DLL.DWGetScaledSamplesCount(self.index)
+
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
@@ -148,6 +152,32 @@ class DWChannel(ctypes.Structure):
             data = self.reduced()['ave']
             data.name = self.name
         return data
+
+    def series_generator(self, chunk_size):
+        """Generator yielding channel data as chunks of pandas series
+
+        :param chunk_size: length of chunked series
+        :type chunk_size: int
+        :returns: pandas.Series
+        """
+        import numpy
+        import pandas
+        count = DLL.DWGetScaledSamplesCount(self.index)
+        if count < 0:
+            raise IndexError(
+                'DWGetScaledSamplesCount({})={} should be non-negative'.format(
+                    self.index, count))
+
+        for chunk in range(0, count, chunk_size):
+            data = numpy.empty(chunk_size, dtype=numpy.double)
+            time = numpy.empty_like(data)
+            stat = DLL.DWGetScaledSamples(self.index, chunk, chunk_size,
+                                          data.ctypes, time.ctypes)
+            if stat:
+                raise DWError(stat)
+
+            time, ix = numpy.unique(time, return_index=True)
+            yield pandas.Series(data=data[ix], index=time)
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""

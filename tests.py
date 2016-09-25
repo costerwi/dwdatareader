@@ -6,6 +6,9 @@ Execute with:
 """
 
 import unittest
+
+import pandas as pd
+
 import dwdatareader as dw
 
 class TestDW(unittest.TestCase):
@@ -79,6 +82,17 @@ class TestDW(unittest.TestCase):
             s = d7d['ENG_RPM'].series()
             s5 = s[5.0:5.5] # time-based slice!
             self.assertTrue(abs(s5.mean() - 3098.5) < 1)
+
+    def test_series_generator(self):
+        """Read a series and make sure its value matches expectation."""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channel = d7d['ENG_RPM']
+            nos = channel.number_of_samples
+            expected = channel.series()
+            actual = pd.concat(list(channel.series_generator(500)))
+            actual = actual.iloc[:nos]
+            self.assertTrue(actual.equals(expected))
 
     def test_reduced(self):
         """Read reduced channel data and check value."""
