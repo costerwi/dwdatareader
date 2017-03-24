@@ -40,7 +40,7 @@ class TestDW(unittest.TestCase):
             self.assertEqual(100, d7d.info.sample_rate)
 
     def test_filelike(self):
-        """Test modeule access and usage of filelike objects.
+        """Test module access and usage of filelike objects.
 
         In this test the dw module must create a temporary file copy
         of the d7d filelike object so that the dll will have something to
@@ -107,6 +107,16 @@ class TestDW(unittest.TestCase):
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual((18771, 20), d7d.dataframe().shape)
+
+    def test_encoding_uft8(self):
+        """ Check that encoding is set correcly """
+        with dw.open(self.d7dname, encoding="utf-8") as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+
+    def test_encoding_uft32(self):
+        """ Check that wrong encoding raises an error """
+        with self.assertRaises(dw.DWError):
+            dw.open(self.d7dname, encoding="utf-32")
 
 if __name__ == '__main__':
     unittest.main()
