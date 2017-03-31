@@ -110,13 +110,15 @@ class TestDW(unittest.TestCase):
 
     def test_encoding_uft8(self):
         """ Check that encoding is set correcly """
-        with dw.open(self.d7dname, encoding="utf-8") as d7d:
+        dw._encoding = 'utf-8'
+        with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
 
     def test_encoding_uft32(self):
         """ Check that wrong encoding raises an error """
+        dw._encoding = 'utf-32'
         with self.assertRaises(dw.DWError):
-            dw.open(self.d7dname, encoding="utf-32")
+            dw.open(self.d7dname)
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,7 +15,7 @@ __all__ = ['DWError', 'DWFile', 'getVersion']
 __version__ = '0.11.0'
 
 DLL = None # module variable accessible to other classes
-_encoding = None  # encoding
+_encoding = 'ISO-8859-1'  # encoding
 
 import os
 import collections
@@ -372,9 +372,7 @@ def unloadDLL():
     DLL = None # Release reference to DLL
 
 
-def open(source, encoding="utf-8"):
-    global _encoding
-    _encoding = encoding
+def open(source):
     return DWFile(source)
 
 
