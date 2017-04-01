@@ -14,11 +14,13 @@ with dw.open('myfile.d7d') as f:
 __all__ = ['DWError', 'DWFile', 'getVersion']
 __version__ = '0.11.0'
 
-DLL = None # module variable accessible to other classes 
+DLL = None # module variable accessible to other classes
+encoding = 'ISO-8859-1'  # default encoding
 
 import os
 import collections
 import ctypes
+
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
@@ -59,7 +61,7 @@ class DWEvent(ctypes.Structure):
     @property
     def event_text(self):
         """Readable description of the event"""
-        return self._event_text.decode()
+        return self._event_text.decode(encoding=encoding)
 
     def __str__(self):
         return "{0.time_stamp} {0.event_text}".format(self)
@@ -78,17 +80,17 @@ class DWChannel(ctypes.Structure):
     @property
     def name(self):
         """An idenfitying name of the channel"""
-        return self._name.decode()
+        return self._name.decode(encoding=encoding)
 
     @property
     def unit(self):
         """The unit of measurement used by the channel"""
-        return self._unit.decode()
+        return self._unit.decode(encoding=encoding)
 
     @property
     def description(self):
         """A short explanation of what the channel measures"""
-        return self._description.decode()
+        return self._description.decode(encoding=encoding)
 
     @property
     def number_of_samples(self):
@@ -235,7 +237,7 @@ class DWFile(collections.Mapping):
 
             # Open the d7d file
             self.info = DWInfo()
-            stat = DLL.DWOpenDataFile(self.name.encode(), ctypes.byref(self.info))
+            stat = DLL.DWOpenDataFile(self.name.encode(encoding=encoding), ctypes.byref(self.info))
             if stat:
                 raise DWError(stat)
             self.closed = False
@@ -262,13 +264,13 @@ class DWFile(collections.Mapping):
             stat = DLL.DWGetHeaderEntryTextF(i, text_, len(text_))
             if stat:
                 raise DWError(stat)
-            text = text_.value.decode()
+            text = text_.value.decode(encoding=encoding)
             if len(text) and not(text.startswith('Select...') or 
                     text.startswith('To fill out')):
                 stat = DLL.DWGetHeaderEntryNameF(i, name_, len(name_))
                 if stat:
                     raise DWError(stat)
-                h[name_.value.decode()] = text
+                h[name_.value.decode(encoding=encoding)] = text
         return h
 
     def events(self):
@@ -376,4 +378,3 @@ def open(source):
 
 # Load and initialize the DLL
 loadDLL()
-
