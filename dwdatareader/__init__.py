@@ -20,6 +20,7 @@ encoding = 'ISO-8859-1'  # default encoding
 import os
 import collections
 import ctypes
+from enum import Enum
 
 
 class DWError(RuntimeError):
@@ -95,6 +96,41 @@ class DWChannel(ctypes.Structure):
     @property
     def number_of_samples(self):
         return DLL.DWGetScaledSamplesCount(self.index)
+
+    @staticmethod
+    def _c_int():
+        return ctypes.c_int(ctypes.sizeof(ctypes.c_int))
+
+    def _chan_prop_contents(self, chan_prop):
+        buff = ctypes.create_string_buffer(self._c_int().value)
+        p_buff = ctypes.cast(buff, ctypes.POINTER(ctypes.c_void_p))
+        DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop.value), p_buff,
+            ctypes.byref(self._c_int()))
+        return ctypes.cast(p_buff,
+                           ctypes.POINTER(ctypes.c_int)).contents
+
+    def _chan_prop_str(self, chan_prop, chan_prop_len):
+        len_str = self._chan_prop_contents(chan_prop_len)
+        p_buff = ctypes.create_string_buffer(len_str.value)
+        DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop.value), p_buff,
+            ctypes.byref(len_str))
+        return p_buff.value.decode()
+
+    @property
+    def channel_type(self):
+        return self._chan_prop_contents(DWChannelProps.DW_CH_TYPE).value
+
+    @property
+    def channel_index(self):
+        return self._chan_prop_str(DWChannelProps.DW_CH_INDEX,
+                                   DWChannelProps.DW_CH_INDEX_LEN)
+
+    @property
+    def channel_xml(self):
+        return self._chan_prop_str(DWChannelProps.DW_CH_XML,
+                                   DWChannelProps.DW_CH_XML_LEN)
 
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
@@ -187,6 +223,20 @@ class DWChannel(ctypes.Structure):
         ax = self.series().plot(*args, **kwargs)
         ax.set_ylabel(self.unit)
         return ax
+
+
+class DWChannelProps(Enum):
+    DW_DATA_TYPE = 0
+    DW_DATA_TYPE_LEN_BYTES = 1
+    DW_CH_INDEX = 2
+    DW_CH_INDEX_LEN = 3
+    DW_CH_TYPE = 4
+    DW_CH_SCALE = 5
+    DW_CH_OFFSET = 6
+    DW_CH_XML = 7
+    DW_CH_XML_LEN = 8
+    DW_CH_XMLPROPS = 9
+    DW_CH_XMLPROPS_LEN = 10
 
 
 class DWFile(collections.Mapping):
