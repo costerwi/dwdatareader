@@ -97,30 +97,28 @@ class DWChannel(ctypes.Structure):
     def number_of_samples(self):
         return DLL.DWGetScaledSamplesCount(self.index)
 
-    @staticmethod
-    def _c_int():
-        return ctypes.c_int(ctypes.sizeof(ctypes.c_int))
-
-    def _chan_prop_contents(self, chan_prop):
-        buff = ctypes.create_string_buffer(self._c_int().value)
-        p_buff = ctypes.cast(buff, ctypes.POINTER(ctypes.c_void_p))
-        DLL.DWGetChannelProps(
-            self.index, ctypes.c_int(chan_prop.value), p_buff,
-            ctypes.byref(self._c_int()))
-        return ctypes.cast(p_buff,
-                           ctypes.POINTER(ctypes.c_int)).contents
+    def _chan_prop_int(self, chan_prop):
+        count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
+        stat = DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop.value), ctypes.byref(count),
+            ctypes.byref(count))
+        if stat:
+            raise DWError(stat)
+        return count
 
     def _chan_prop_str(self, chan_prop, chan_prop_len):
-        len_str = self._chan_prop_contents(chan_prop_len)
+        len_str = self._chan_prop_int(chan_prop_len)
         p_buff = ctypes.create_string_buffer(len_str.value)
-        DLL.DWGetChannelProps(
+        stat = DLL.DWGetChannelProps(
             self.index, ctypes.c_int(chan_prop.value), p_buff,
             ctypes.byref(len_str))
-        return p_buff.value.decode()
+        if stat:
+            raise DWError(stat)
+        return p_buff.value.decode(encoding=encoding)
 
     @property
     def channel_type(self):
-        return self._chan_prop_contents(DWChannelProps.DW_CH_TYPE).value
+        return self._chan_prop_int(DWChannelProps.DW_CH_TYPE).value
 
     @property
     def channel_index(self):
