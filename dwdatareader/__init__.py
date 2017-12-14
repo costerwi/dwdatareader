@@ -170,15 +170,17 @@ class DWChannel(ctypes.Structure):
                 'DWGetScaledSamplesCount({})={} should be non-negative'.format(
                     self.index, count))
 
+        data = numpy.empty(chunk_size, dtype=numpy.double)
+        time = numpy.empty_like(data)
         for chunk in range(0, count, chunk_size):
-            data = numpy.empty(chunk_size, dtype=numpy.double)
-            time = numpy.empty_like(data)
-            stat = DLL.DWGetScaledSamples(self.index, chunk, chunk_size,
-                                          data.ctypes, time.ctypes)
+            chunk_size = min(chunk_size, count - chunk)
+            stat = DLL.DWGetScaledSamples(self.index,
+                    chunk, chunk_size,
+                    data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
 
-            time, ix = numpy.unique(time, return_index=True)
+            time, ix = numpy.unique(time[:chunk_size], return_index=True)
             yield pandas.Series(data=data[ix], index=time)
 
     def plot(self, *args, **kwargs):
