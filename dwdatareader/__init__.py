@@ -20,7 +20,6 @@ encoding = 'ISO-8859-1'  # default encoding
 import os
 import collections
 import ctypes
-from enum import Enum
 
 
 class DWError(RuntimeError):
@@ -100,7 +99,7 @@ class DWChannel(ctypes.Structure):
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
         stat = DLL.DWGetChannelProps(
-            self.index, ctypes.c_int(chan_prop.value), ctypes.byref(count),
+            self.index, ctypes.c_int(chan_prop), ctypes.byref(count),
             ctypes.byref(count))
         if stat:
             raise DWError(stat)
@@ -110,7 +109,7 @@ class DWChannel(ctypes.Structure):
         len_str = self._chan_prop_int(chan_prop_len)
         p_buff = ctypes.create_string_buffer(len_str.value)
         stat = DLL.DWGetChannelProps(
-            self.index, ctypes.c_int(chan_prop.value), p_buff,
+            self.index, ctypes.c_int(chan_prop), p_buff,
             ctypes.byref(len_str))
         if stat:
             raise DWError(stat)
@@ -223,7 +222,7 @@ class DWChannel(ctypes.Structure):
         return ax
 
 
-class DWChannelProps(Enum):
+class DWChannelProps():
     DW_DATA_TYPE = 0
     DW_DATA_TYPE_LEN_BYTES = 1
     DW_CH_INDEX = 2
