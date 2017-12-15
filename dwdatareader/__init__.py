@@ -229,7 +229,7 @@ class DWFile(collections.Mapping):
             if hasattr(source, 'read'): # source is a file-like object
                 temp_fd, self.name = tempfile.mkstemp(suffix='.d7d') # Create tempfile
                 self.delete = True
-                with os.fdopen(temp_fd, mode='wb') as ts:
+                with os.fdopen(temp_fd, 'wb') as ts:
                     ts.write(source.read()) # Make a temporary copy
             else:   # assume source is a str filename
                 self.name = source
