@@ -174,9 +174,10 @@ class DWChannel(ctypes.Structure):
         time = numpy.empty_like(data)
         for chunk in range(0, count, chunk_size):
             chunk_size = min(chunk_size, count - chunk)
-            stat = DLL.DWGetScaledSamples(self.index,
-                    chunk, chunk_size,
-                    data.ctypes, time.ctypes)
+            stat = DLL.DWGetScaledSamples(
+                self.index,
+                chunk, chunk_size,
+                data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
 
