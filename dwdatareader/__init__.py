@@ -96,6 +96,39 @@ class DWChannel(ctypes.Structure):
     def number_of_samples(self):
         return DLL.DWGetScaledSamplesCount(self.index)
 
+    def _chan_prop_int(self, chan_prop):
+        count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
+        stat = DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop), ctypes.byref(count),
+            ctypes.byref(count))
+        if stat:
+            raise DWError(stat)
+        return count
+
+    def _chan_prop_str(self, chan_prop, chan_prop_len):
+        len_str = self._chan_prop_int(chan_prop_len)
+        p_buff = ctypes.create_string_buffer(len_str.value)
+        stat = DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop), p_buff,
+            ctypes.byref(len_str))
+        if stat:
+            raise DWError(stat)
+        return p_buff.value.decode(encoding=encoding)
+
+    @property
+    def channel_type(self):
+        return self._chan_prop_int(DWChannelProps.DW_CH_TYPE).value
+
+    @property
+    def channel_index(self):
+        return self._chan_prop_str(DWChannelProps.DW_CH_INDEX,
+                                   DWChannelProps.DW_CH_INDEX_LEN)
+
+    @property
+    def channel_xml(self):
+        return self._chan_prop_str(DWChannelProps.DW_CH_XML,
+                                   DWChannelProps.DW_CH_XML_LEN)
+
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
@@ -190,6 +223,20 @@ class DWChannel(ctypes.Structure):
         ax = self.series().plot(*args, **kwargs)
         ax.set_ylabel(self.unit)
         return ax
+
+
+class DWChannelProps():
+    DW_DATA_TYPE = 0
+    DW_DATA_TYPE_LEN_BYTES = 1
+    DW_CH_INDEX = 2
+    DW_CH_INDEX_LEN = 3
+    DW_CH_TYPE = 4
+    DW_CH_SCALE = 5
+    DW_CH_OFFSET = 6
+    DW_CH_XML = 7
+    DW_CH_XML_LEN = 8
+    DW_CH_XMLPROPS = 9
+    DW_CH_XMLPROPS_LEN = 10
 
 
 class DWFile(collections.Mapping):
