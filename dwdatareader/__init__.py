@@ -75,7 +75,8 @@ class DWChannel(ctypes.Structure):
                 ("_unit", ctypes.c_char * 20),
                 ("_description", ctypes.c_char * 200),
                 ("color" , ctypes.c_uint),
-                ("array_size", ctypes.c_int)]
+                ("array_size", ctypes.c_int),
+                ("data_type", ctypes.c_int)]
 
     @property
     def name(self):

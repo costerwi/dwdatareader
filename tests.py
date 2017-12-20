@@ -110,7 +110,7 @@ class TestDW(unittest.TestCase):
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.channel_index
-            expected = 'CAN;0;640'
+            expected = 'CAN;0;640;20'
             self.assertEqual(actual, expected)
 
     def test_channel_xml(self):
