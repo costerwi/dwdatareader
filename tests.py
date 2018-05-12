@@ -4,11 +4,14 @@
 Execute with:
     python tests.py
 """
-
+import os
+import platform
+import sys
 import unittest
 import xml.etree.ElementTree as et
 
 import pandas as pd
+import pytest
 
 import dwdatareader as dw
 
@@ -104,13 +107,17 @@ class TestDW(unittest.TestCase):
             expected = 1
             self.assertEqual(actual, expected)
 
+    @pytest.mark.skipif((platform.architecture()[0] == '32bit')
+                        or (os.name is not 'nt')
+                        or (sys.version_info >= (3, 5)),
+                        reason='Upstream bug.')
     def test_channel_index(self):
         """Channel type"""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.channel_index
-            expected = 'CAN;0;640'
+            expected = 'CAN;0;640;20'
             self.assertEqual(actual, expected)
 
     def test_channel_xml(self):
