@@ -75,7 +75,8 @@ class DWChannel(ctypes.Structure):
                 ("_unit", ctypes.c_char * 20),
                 ("_description", ctypes.c_char * 200),
                 ("color" , ctypes.c_uint),
-                ("array_size", ctypes.c_int)]
+                ("array_size", ctypes.c_int),
+                ("data_type", ctypes.c_int)]
 
     @property
     def name(self):
@@ -142,7 +143,7 @@ class DWChannel(ctypes.Structure):
                 self.index, count))
         data = numpy.empty(count, dtype=numpy.double)
         time = numpy.empty_like(data)
-        stat = DLL.DWGetScaledSamples(self.index, 0, count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
@@ -209,7 +210,7 @@ class DWChannel(ctypes.Structure):
             chunk_size = min(chunk_size, count - chunk)
             stat = DLL.DWGetScaledSamples(
                 self.index,
-                chunk, chunk_size,
+                ctypes.c_int64(chunk), chunk_size,
                 data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
