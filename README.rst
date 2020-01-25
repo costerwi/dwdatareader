@@ -7,7 +7,7 @@ format. DEWESoft provides a free Windows application to work with the data
 and a free shared library for developers on Windows and Linux.
 
 This is a Python module to interact with the DEWESoft DWDataReaderLib shared library
-available from http://www.dewesoft.com/developers
+available from https://download.dewesoft.com/list/developers.
 
 Installation
 ------------
