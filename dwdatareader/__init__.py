@@ -193,6 +193,44 @@ class DWChannel(ctypes.Structure):
                 index = time,
                 name = self.name)
 
+    def dataframe(self):
+        """Load and return full speed channel data as Pandas Dataframe"""
+        import numpy
+        import pandas
+        count = self.number_of_samples
+        data = numpy.empty(count*self.array_size, dtype=numpy.double)
+        time = numpy.empty(count, dtype=numpy.double)
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+                data.ctypes, time.ctypes)
+        if stat:
+            raise DWError(stat)
+
+        columns = []
+        if 1 == self.array_size:
+            columns.append(self.name)
+        else: # Channel has axes
+            text_ = ctypes.create_string_buffer(200)
+            for axis in self.arrayInfo:
+                for valueIndex in range(self.array_size):
+                    stat = DLL.DWGetArrayIndexValue(
+                            self.index,
+                            axis.index,
+                            valueIndex,
+                            text_,
+                            len(text_) )
+                    if stat:
+                        raise DWError(stat)
+                    columns.append(' '.join([
+                            self.name,
+                            axis.name,
+                            text_.value.decode(encoding=encoding)]))
+
+        time, ix = numpy.unique(time, return_index=True) # use unique times
+        return pandas.DataFrame(
+                data = data.reshape(count, self.array_size)[ix,:],
+                index = time,
+                columns = columns)
+
     def reduced(self):
         """Load reduced (averaged) data as Pandas DataFrame"""
         import numpy as np

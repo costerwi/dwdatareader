@@ -139,6 +139,13 @@ class TestDW(unittest.TestCase):
             r5 = r.ave.asof(5.0) # index into reduced list near time=5.0
             self.assertTrue(abs(r5 - 3099.7) < 1)
 
+    def test_channel_dataframe(self):
+        """Read one channel as a DataFrame"""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            df = d7d['ENG_RPM'].dataframe()
+            self.assertEqual(len(df.ENG_RPM), 4791)
+
     def test_dataframe(self):
         """Read all channel data as a single DataFrame."""
         with dw.open(self.d7dname) as d7d:
@@ -156,6 +163,7 @@ class TestDW(unittest.TestCase):
         dw.encoding = 'utf-32'
         with self.assertRaises(dw.DWError):
             dw.open(self.d7dname)
+
 
 if __name__ == '__main__':
     unittest.main()
