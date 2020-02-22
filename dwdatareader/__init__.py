@@ -194,7 +194,7 @@ class DWChannel(ctypes.Structure):
             data.name = self.name
         return data
 
-    def series_generator(self, chunk_size):
+    def series_generator(self, chunk_size, arrayIndex=0):
         """Generator yielding channel data as chunks of pandas series
 
         :param chunk_size: length of chunked series
@@ -203,14 +203,10 @@ class DWChannel(ctypes.Structure):
         """
         import numpy
         import pandas
-        count = DLL.DWGetScaledSamplesCount(self.index)
-        if count < 0:
-            raise IndexError(
-                'DWGetScaledSamplesCount({})={} should be non-negative'.format(
-                    self.index, count))
-
-        data = numpy.empty(chunk_size, dtype=numpy.double)
-        time = numpy.empty_like(data)
+        count = self.number_of_samples
+        chunk_size = min(chunk_size, count)
+        data = numpy.empty(chunk_size*self.array_size, dtype=numpy.double)
+        time = numpy.empty(chunk_size)
         for chunk in range(0, count, chunk_size):
             chunk_size = min(chunk_size, count - chunk)
             stat = DLL.DWGetScaledSamples(
@@ -221,7 +217,10 @@ class DWChannel(ctypes.Structure):
                 raise DWError(stat)
 
             time, ix = numpy.unique(time[:chunk_size], return_index=True)
-            yield pandas.Series(data=data[ix], index=time)
+            yield pandas.Series(
+                    data = data.reshape(-1, self.array_size)[ix, arrayIndex],
+                    index = time,
+                    name = self.name)
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
