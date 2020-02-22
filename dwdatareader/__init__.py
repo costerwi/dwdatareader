@@ -243,24 +243,30 @@ class DWChannelProps():
 class DWFile(collections.Mapping):
     """Data file type mapping channel names their metadata"""
 
+    _readers = [] # Internal list of DWFile instances
+
     def __init__(self, source = None):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
         self.delete = False # Whether to remove file when closed
 
+        self.readerID = len(self._readers) # DWInit creates the first readerID 0
+        if self.readerID > 0: # Add reader only if this is not the first
+            stat = DLL.DWAddReader()
+            if stat:
+                raise DWError(stat)
+        self._readers.append(self)
+
+        # Check for matching number of readers
         num_readers = ctypes.c_int()
         stat = DLL.DWGetNumReaders(ctypes.byref(num_readers))
         if stat:
             raise DWError(stat)
-        self.readerID = num_readers.value - 1
+        if num_readers.value != len(self._readers):
+            raise('DWGetNumReaders={0} != {1}'.format(num_readers.value, len(self._readers)))
 
         if source:
             self.open(source) # If this fails then the instance is not constructed
-
-        stat = DLL.DWAddReader()  # Add reader to be used by next DWFile instance
-        if stat:
-            self.close()
-            raise DWError(stat)
 
     def activate(self, verifyOpen=True):
         """Set this DWFile instance as the active reader"""
