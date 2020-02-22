@@ -95,7 +95,11 @@ class DWChannel(ctypes.Structure):
 
     @property
     def number_of_samples(self):
-        return DLL.DWGetScaledSamplesCount(self.index)
+        count = DLL.DWGetScaledSamplesCount(self.index)
+        if count < 0:
+            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
+                self.index, count))
+        return count
 
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
@@ -139,10 +143,7 @@ class DWChannel(ctypes.Structure):
         import pandas
         if not 0 <= arrayIndex < self.array_size:
             raise IndexError('arrayIndex is out of range')
-        count = DLL.DWGetScaledSamplesCount(self.index)
-        if count < 0:
-            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
-                self.index, count))
+        count = self.number_of_samples
         data = numpy.empty(count*self.array_size, dtype=numpy.double)
         time = numpy.empty(count, dtype=numpy.double)
         stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
