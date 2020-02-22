@@ -133,23 +133,28 @@ class DWChannel(ctypes.Structure):
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
-    def scaled(self):
+    def scaled(self, arrayIndex=0):
         """Load and return full speed data as Pandas Series"""
         import numpy
         import pandas
+        if not 0 <= arrayIndex < self.array_size:
+            raise IndexError('arrayIndex is out of range')
         count = DLL.DWGetScaledSamplesCount(self.index)
         if count < 0:
             raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
                 self.index, count))
-        data = numpy.empty(count, dtype=numpy.double)
-        time = numpy.empty_like(data)
+        data = numpy.empty(count*self.array_size, dtype=numpy.double)
+        time = numpy.empty(count, dtype=numpy.double)
         stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
 
         time, ix = numpy.unique(time, return_index=True) # use unique times
-        return pandas.Series(data = data[ix], index = time, name = self.name)
+        return pandas.Series(
+                data = data.reshape(count, self.array_size)[ix, arrayIndex],
+                index = time,
+                name = self.name)
 
     def reduced(self):
         """Load reduced (averaged) data as Pandas DataFrame"""
