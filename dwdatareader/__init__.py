@@ -67,6 +67,27 @@ class DWEvent(ctypes.Structure):
         return "{0.time_stamp} {0.event_text}".format(self)
 
 
+class DWArrayInfo(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("index", ctypes.c_int),
+                ("_name", ctypes.c_char * 100),
+                ("_unit", ctypes.c_char * 20),
+                ("size", ctypes.c_int)]
+
+    @property
+    def name(self):
+        """An idenfitying name of the array"""
+        return self._name.decode(encoding=encoding)
+
+    @property
+    def unit(self):
+        """The unit of measurement used by the array"""
+        return self._unit.decode(encoding=encoding)
+
+    def __str__(self):
+        return "DWArrayInfo index={0.index} name='{0.name}' unit='{0.unit}' size={0.size}".format(self)
+
+
 class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
     _pack_ = 1
@@ -133,6 +154,21 @@ class DWChannel(ctypes.Structure):
     def channel_xml(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_XML,
                                    DWChannelProps.DW_CH_XML_LEN)
+
+    @property
+    def arrayInfo(self):
+        """Return list of array info axes for this channel"""
+        if self.array_size < 2:
+            return []
+        narray = DLL.DWGetArrayInfoCount(self.index) # available array axes for this channel
+        if narray < 1:
+            raise IndexError('DWGetArrayInfoCount({})={} should be >0'.format(
+                self.index, narray))
+        axes = (DWArrayInfo * narray)()
+        stat = DLL.DWGetArrayInfoList(self.index, axes)
+        if stat:
+            raise DWError(stat)
+        return axes
 
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
