@@ -1,6 +1,14 @@
 dwdatareader
 ============
 
+.. image:: https://travis-ci.com/costerwi/dwdatareader.svg?branch=master
+   :alt: DWDataReader build status on Travis CI
+   :target: https://travis-ci.com/costerwi/dwdatareader
+
+.. image:: https://ci.appveyor.com/api/projects/status/a2qssrmuepbx224i/branch/master?svg=true
+   :alt: DWDataReader build status on Appveyor
+   :target: https://ci.appveyor.com/project/costerwi/dwdatareader/branch/master
+
 DEWESoft produces hardware and software for test measurement, data aquisition, 
 and storage. Data files are stored with the extension .d7d in a proprietary
 format. DEWESoft provides a free Windows application to work with the data
