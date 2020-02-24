@@ -324,11 +324,12 @@ class DWFile(collections.Mapping):
                 h[name_.value.decode(encoding=encoding)] = text
         return h
 
-    def export_header(self):
+    def export_header(self, file_name):
         """Export header as .xml file"""
         self.activate()
-        file_name = "local.xml"
-        DLL.DWExportHeader(file_name.encode(encoding=encoding))
+        stat = DLL.DWExportHeader(file_name.encode(encoding=encoding))
+        if stat:
+            raise DWError(stat)
         return 0
 
     def events(self):
