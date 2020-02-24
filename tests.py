@@ -76,8 +76,9 @@ class TestDW(unittest.TestCase):
 
     def test_export_header(self):
         """Make sure header is exported to file local.xml"""
+        file_name = "local.xml"
         with dw.open(self.d7dname) as dwf:
-            dwf.export_header()
+            dwf.export_header(file_name)
         assert os.path.isfile("local.xml")
 
     def test_events(self):
