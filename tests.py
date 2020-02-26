@@ -74,6 +74,13 @@ class TestDW(unittest.TestCase):
             # Unfortunately, no headers in sample file
             self.assertDictEqual({}, d7d.header)
 
+    def test_export_header(self):
+        """Make sure header is exported to file local.xml"""
+        file_name = "local.xml"
+        with dw.open(self.d7dname) as dwf:
+            dwf.export_header(file_name)
+        assert os.path.isfile("local.xml")
+
     def test_events(self):
         """Make sure events are readable."""
         with dw.open(self.d7dname) as d7d:

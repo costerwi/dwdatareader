@@ -330,6 +330,14 @@ class DWFile(collections.Mapping):
                 h[name_.value.decode(encoding=encoding)] = text
         return h
 
+    def export_header(self, file_name):
+        """Export header as .xml file"""
+        self.activate()
+        stat = DLL.DWExportHeader(file_name.encode(encoding=encoding))
+        if stat:
+            raise DWError(stat)
+        return 0
+
     def events(self):
         """Load and return timeseries of file events"""
         import pandas
