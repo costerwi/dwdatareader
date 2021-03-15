@@ -67,6 +67,27 @@ class DWEvent(ctypes.Structure):
         return "{0.time_stamp} {0.event_text}".format(self)
 
 
+class DWArrayInfo(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("index", ctypes.c_int),
+                ("_name", ctypes.c_char * 100),
+                ("_unit", ctypes.c_char * 20),
+                ("size", ctypes.c_int)]
+
+    @property
+    def name(self):
+        """An idenfitying name of the array"""
+        return self._name.decode(encoding=encoding)
+
+    @property
+    def unit(self):
+        """The unit of measurement used by the array"""
+        return self._unit.decode(encoding=encoding)
+
+    def __str__(self):
+        return "DWArrayInfo index={0.index} name='{0.name}' unit='{0.unit}' size={0.size}".format(self)
+
+
 class DWChannel(ctypes.Structure):
     """Store channel metadata, provide methods to load channel data"""
     _pack_ = 1
@@ -95,7 +116,11 @@ class DWChannel(ctypes.Structure):
 
     @property
     def number_of_samples(self):
-        return DLL.DWGetScaledSamplesCount(self.index)
+        count = DLL.DWGetScaledSamplesCount(self.index)
+        if count < 0:
+            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
+                self.index, count))
+        return count
 
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
@@ -130,26 +155,81 @@ class DWChannel(ctypes.Structure):
         return self._chan_prop_str(DWChannelProps.DW_CH_XML,
                                    DWChannelProps.DW_CH_XML_LEN)
 
+    @property
+    def arrayInfo(self):
+        """Return list of array info axes for this channel"""
+        if self.array_size < 2:
+            return []
+        narray = DLL.DWGetArrayInfoCount(self.index) # available array axes for this channel
+        if narray < 1:
+            raise IndexError('DWGetArrayInfoCount({})={} should be >0'.format(
+                self.index, narray))
+        axes = (DWArrayInfo * narray)()
+        stat = DLL.DWGetArrayInfoList(self.index, axes)
+        if stat:
+            raise DWError(stat)
+        return axes
+
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
 
-    def scaled(self):
+    def scaled(self, arrayIndex=0):
         """Load and return full speed data as Pandas Series"""
         import numpy
         import pandas
-        count = DLL.DWGetScaledSamplesCount(self.index)
-        if count < 0:
-            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
-                self.index, count))
-        data = numpy.empty(count, dtype=numpy.double)
-        time = numpy.empty_like(data)
+        if not 0 <= arrayIndex < self.array_size:
+            raise IndexError('arrayIndex is out of range')
+        count = self.number_of_samples
+        data = numpy.empty(count*self.array_size, dtype=numpy.double)
+        time = numpy.empty(count, dtype=numpy.double)
         stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
 
         time, ix = numpy.unique(time, return_index=True) # use unique times
-        return pandas.Series(data = data[ix], index = time, name = self.name)
+        return pandas.Series(
+                data = data.reshape(count, self.array_size)[ix, arrayIndex],
+                index = time,
+                name = self.name)
+
+    def dataframe(self):
+        """Load and return full speed channel data as Pandas Dataframe"""
+        import numpy
+        import pandas
+        count = self.number_of_samples
+        data = numpy.empty(count*self.array_size, dtype=numpy.double)
+        time = numpy.empty(count, dtype=numpy.double)
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+                data.ctypes, time.ctypes)
+        if stat:
+            raise DWError(stat)
+
+        columns = []
+        if 1 == self.array_size:
+            columns.append(self.name)
+        else: # Channel has axes
+            text_ = ctypes.create_string_buffer(200)
+            for axis in self.arrayInfo:
+                for valueIndex in range(self.array_size):
+                    stat = DLL.DWGetArrayIndexValue(
+                            self.index,
+                            axis.index,
+                            valueIndex,
+                            text_,
+                            len(text_) )
+                    if stat:
+                        raise DWError(stat)
+                    columns.append(' '.join([
+                            self.name,
+                            axis.name,
+                            text_.value.decode(encoding=encoding)]))
+
+        time, ix = numpy.unique(time, return_index=True) # use unique times
+        return pandas.DataFrame(
+                data = data.reshape(count, self.array_size)[ix,:],
+                index = time,
+                columns = columns)
 
     def reduced(self):
         """Load reduced (averaged) data as Pandas DataFrame"""
@@ -189,7 +269,7 @@ class DWChannel(ctypes.Structure):
             data.name = self.name
         return data
 
-    def series_generator(self, chunk_size):
+    def series_generator(self, chunk_size, arrayIndex=0):
         """Generator yielding channel data as chunks of pandas series
 
         :param chunk_size: length of chunked series
@@ -198,14 +278,10 @@ class DWChannel(ctypes.Structure):
         """
         import numpy
         import pandas
-        count = DLL.DWGetScaledSamplesCount(self.index)
-        if count < 0:
-            raise IndexError(
-                'DWGetScaledSamplesCount({})={} should be non-negative'.format(
-                    self.index, count))
-
-        data = numpy.empty(chunk_size, dtype=numpy.double)
-        time = numpy.empty_like(data)
+        count = self.number_of_samples
+        chunk_size = min(chunk_size, count)
+        data = numpy.empty(chunk_size*self.array_size, dtype=numpy.double)
+        time = numpy.empty(chunk_size)
         for chunk in range(0, count, chunk_size):
             chunk_size = min(chunk_size, count - chunk)
             stat = DLL.DWGetScaledSamples(
@@ -216,7 +292,10 @@ class DWChannel(ctypes.Structure):
                 raise DWError(stat)
 
             time, ix = numpy.unique(time[:chunk_size], return_index=True)
-            yield pandas.Series(data=data[ix], index=time)
+            yield pandas.Series(
+                    data = data.reshape(-1, self.array_size)[ix, arrayIndex],
+                    index = time,
+                    name = self.name)
 
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
