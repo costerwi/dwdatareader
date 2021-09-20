@@ -115,7 +115,7 @@ class TestDW(unittest.TestCase):
             self.assertEqual(actual, expected)
 
     @pytest.mark.skipif((platform.architecture()[0] == '32bit')
-                        or (os.name is not 'nt')
+                        or (os.name != 'nt')
                         or (sys.version_info >= (3, 5)),
                         reason='Upstream bug.')
     def test_channel_index(self):
