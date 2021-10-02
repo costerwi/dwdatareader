@@ -33,6 +33,8 @@ Example usage
 Scripts like the following may be run from the command line or, more
 interactively, from `Jupyter Notebook <http://jupyter.org>`_
 
+You can work with a `live Binder example here <https://mybinder.org/v2/gh/costerwi/dwdatareader/master?labpath=dwdatareader_example.ipynb>`_.
+
 .. code:: python
 
     import dwdatareader as dw
