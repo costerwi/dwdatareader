@@ -18,9 +18,12 @@ DLL = None # module variable accessible to other classes
 encoding = 'ISO-8859-1'  # default encoding
 
 import os
-import collections
 import ctypes
 
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
@@ -319,7 +322,7 @@ class DWChannelProps():
     DW_CH_XMLPROPS_LEN = 10
 
 
-class DWFile(collections.Mapping):
+class DWFile(Mapping):
     """Data file type mapping channel names their metadata"""
 
     _readers = [] # Internal list of DWFile instances
