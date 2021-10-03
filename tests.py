@@ -114,17 +114,13 @@ class TestDW(unittest.TestCase):
             expected = 1
             self.assertEqual(actual, expected)
 
-    @pytest.mark.skipif((platform.architecture()[0] == '32bit')
-                        or (os.name != 'nt')
-                        or (sys.version_info >= (3, 5)),
-                        reason='Upstream bug.')
     def test_channel_index(self):
         """Channel type"""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            channel = d7d['ENG_RPM']
+            channel = d7d['GPSvel']
             actual = channel.channel_index
-            expected = 'CAN;0;640;20'
+            expected = 'AI;4'
             self.assertEqual(actual, expected)
 
     def test_channel_xml(self):
