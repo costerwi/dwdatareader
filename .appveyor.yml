@@ -13,10 +13,6 @@ environment:
       MINICONDA: C:\Miniconda
       PYTHON_ARCH: "32"
 
-    - PYTHON_VERSION: "3.4"
-      MINICONDA: C:\Miniconda34
-      PYTHON_ARCH: "32"
-
     - PYTHON_VERSION: "3.5"
       MINICONDA: C:\Miniconda35
       PYTHON_ARCH: "32"
@@ -25,16 +21,34 @@ environment:
       MINICONDA: C:\Miniconda36
       PYTHON_ARCH: "32"
 
+    - PYTHON_VERSION: "3.7"
+      MINICONDA: C:\Miniconda36
+      PYTHON_ARCH: "32"
+
+    - PYTHON_VERSION: "3.8"
+      MINICONDA: C:\Miniconda36
+      PYTHON_ARCH: "32"
+
+    - PYTHON_VERSION: "3.9"
+      MINICONDA: C:\Miniconda36
+      PYTHON_ARCH: "32"
+
     - PYTHON_VERSION: "2.7"
       MINICONDA: C:\Miniconda-x64
-
-    - PYTHON_VERSION: "3.4"
-      MINICONDA: C:\Miniconda34-x64
 
     - PYTHON_VERSION: "3.5"
       MINICONDA: C:\Miniconda35-x64
 
     - PYTHON_VERSION: "3.6"
+      MINICONDA: C:\Miniconda36-x64
+
+    - PYTHON_VERSION: "3.7"
+      MINICONDA: C:\Miniconda36-x64
+
+    - PYTHON_VERSION: "3.8"
+      MINICONDA: C:\Miniconda36-x64
+
+    - PYTHON_VERSION: "3.9"
       MINICONDA: C:\Miniconda36-x64
 
 init:
@@ -53,7 +67,7 @@ install:
   - conda update -q conda
   - conda config --add channels conda-forge
   - conda info -a
-  - "conda create --quiet --name test-environment python=%PYTHON_VERSION% pandas --file requirements.txt --file requirements-dev.txt"
+  - "conda create --quiet --name test-environment python=%PYTHON_VERSION% --file requirements.txt --file requirements-dev.txt"
 
 build: off
 
