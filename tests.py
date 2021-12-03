@@ -134,6 +134,15 @@ class TestDW(unittest.TestCase):
             expected = 'True'
             self.assertEqual(actual, expected)
 
+    def test_channel_longname(self):
+        """Channel long name"""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channel = d7d['ENG_RPM']
+            actual = channel.long_name
+            expected = 'ENG_RPM'
+            self.assertEqual(actual, expected)
+
     def test_reduced(self):
         """Read reduced channel data and check value."""
         with dw.open(self.d7dname) as d7d:
