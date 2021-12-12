@@ -4,15 +4,16 @@ language: python
 
 python:
   - "2.7"
-  - "3.5"
   - "3.6"
   - "3.7"
   - "3.8"
   - "3.9"
 
+before_install:
+  - python -m pip install --upgrade pip
+
 install:
-  - "pip install --upgrade pip setuptools wheel"
-  - "pip install --only-binary=pandas,numpy numpy pandas"
+  - pip install -r requirements.txt
 
 script:
-  - "py.test tests.py"
+  - pytest
