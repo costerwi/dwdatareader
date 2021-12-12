@@ -159,6 +159,11 @@ class DWChannel(ctypes.Structure):
                                    DWChannelProps.DW_CH_XML_LEN)
 
     @property
+    def long_name(self):
+        return self._chan_prop_str(DWChannelProps.DW_CH_LONGNAME,
+                                   DWChannelProps.DW_CH_LONGNAME_LEN)
+
+    @property
     def arrayInfo(self):
         """Return list of array info axes for this channel"""
         if self.array_size < 2:
@@ -320,6 +325,10 @@ class DWChannelProps():
     DW_CH_XML_LEN = 8
     DW_CH_XMLPROPS = 9
     DW_CH_XMLPROPS_LEN = 10
+    DW_CH_CUSTOMPROPS = 11
+    DW_CH_CUSTOMPROPS_COUNT = 12
+    DW_CH_LONGNAME = 13
+    DW_CH_LONGNAME_LEN = 14
 
 
 class DWFile(Mapping):
