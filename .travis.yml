@@ -8,11 +8,10 @@ python:
   - "3.7"
   - "3.8"
   - "3.9"
-  - "3.10"
 
 install:
-  - "pip install --upgrade pip setuptools wheel"
-  - "pip install --only-binary=pandas,numpy numpy pandas"
+  - pip install --upgrade pip setuptools wheel
+  - pip install -r requirements.txt
 
 script:
-  - "py.test test_module.py"
+  - pytest
