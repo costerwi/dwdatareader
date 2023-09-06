@@ -1,0 +1,21 @@
+# appveyor.yml - https://www.appveyor.com/docs/lang/python
+---
+image:
+  - Visual Studio 2019
+  - Ubuntu
+
+environment:
+  matrix:
+  - TOXENV: py27  # https://devguide.python.org/devcycle/#end-of-life-branches
+  - TOXENV: py37
+  - TOXENV: py310
+
+build: false
+
+install:
+  # - py --list
+  # - py -m pip install --upgrade pip
+  - py -m pip install tox
+
+test_script:
+  - py -m tox
