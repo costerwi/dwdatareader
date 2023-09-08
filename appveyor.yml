@@ -16,7 +16,8 @@ install:
   # - py --list
   # - python -m ensurepip --upgrade
   # - python -m pip install tox
-  - pip install tox
+  - pip install --user tox
 
 test_script:
-  - python -m tox
+  - cmd: py -m tox
+  - sh: ~/.local/bin/tox run
