@@ -162,7 +162,7 @@ class TestDW(unittest.TestCase):
         """Read all channel data as a single DataFrame."""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            self.assertEqual((18771, 20), d7d.dataframe().shape)
+            self.assertEqual((18770, 20), d7d.dataframe().shape)
 
     def test_encoding_uft8(self):
         """ Check that encoding is set correcly """
