@@ -35,7 +35,10 @@ class DWError(RuntimeError):
               5: "memory allocation",
               6: "creating uncompressed file",
               7: "extracting data",
-              8: "opening uncompressed file"}
+              8: "opening uncompressed file",
+              9: "invalid intermediate buffer level (ib_level)",
+              10: "CAN not supported",
+              }
 
     def __init__(self, value):
         error = self.errors.get(value, 'Unknown error {}'.format(value))
