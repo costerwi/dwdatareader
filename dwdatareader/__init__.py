@@ -27,13 +27,19 @@ except ImportError:
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
-    errors = ("status OK", "error in DLL", "cannot open d7d file",
-            "file already in use", "d7d file corrupt", "memory allocation",
-            "creating uncompressed file", "extracting data",
-            "opening uncompressed file")
+    errors = {0: "status OK",
+              1: "error in DLL",
+              2: "cannot open d7d file",
+              3: "file already in use",
+              4: "d7d file corrupt",
+              5: "memory allocation",
+              6: "creating uncompressed file",
+              7: "extracting data",
+              8: "opening uncompressed file")
 
     def __init__(self, value):
-        super(DWError, self).__init__(self.errors[value])
+        error = self.errors.get(value, 'Unknown error {}'.format(value))
+        super(DWError, self).__init__(error)
 
 
 class DWInfo(ctypes.Structure):
