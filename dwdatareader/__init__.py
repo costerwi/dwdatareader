@@ -196,7 +196,7 @@ class DWChannel(ctypes.Structure):
         count = self.number_of_samples
         data = numpy.empty(count*self.array_size, dtype=numpy.double)
         time = numpy.empty(count, dtype=numpy.double)
-        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), ctypes.c_int64(count),
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
@@ -214,7 +214,7 @@ class DWChannel(ctypes.Structure):
         count = self.number_of_samples
         data = numpy.empty(count*self.array_size, dtype=numpy.double)
         time = numpy.empty(count, dtype=numpy.double)
-        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), ctypes.c_int64(count),
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
@@ -300,7 +300,7 @@ class DWChannel(ctypes.Structure):
             chunk_size = min(chunk_size, count - chunk)
             stat = DLL.DWGetScaledSamples(
                 self.index,
-                ctypes.c_int64(chunk), chunk_size,
+                ctypes.c_int64(chunk), ctypes.c_int64(chunk_size),
                 data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
