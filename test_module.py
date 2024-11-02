@@ -2,7 +2,7 @@
 """Tests for dwdatareader python module.
 
 Execute with:
-    python tests.py
+    python test_module.py
 """
 import os
 import platform
