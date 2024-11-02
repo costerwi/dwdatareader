@@ -114,6 +114,15 @@ class TestDW(unittest.TestCase):
             expected = 1
             self.assertEqual(actual, expected)
 
+    def test_CAN_channel(self):
+        """Read channel data with CAN in its channel_index"""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channel = d7d['ENG_RPM']
+            # Following did not fail prior to DWDataReader v4.2.0.31
+            # Now all channels whose channel_index begins with CAN will fail with "CAN note supported"
+            scaled = channel.scaled()
+
     def test_channel_index(self):
         """Channel type"""
         with dw.open(self.d7dname) as d7d:
