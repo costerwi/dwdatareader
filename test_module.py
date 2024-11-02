@@ -91,15 +91,15 @@ class TestDW(unittest.TestCase):
         """Read a series and make sure its value matches expectation."""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            s = d7d['ENG_RPM'].series()
+            s = d7d['GPSvel'].series()
             s5 = s[5.0:5.5] # time-based slice!
-            self.assertTrue(abs(s5.mean() - 3098.5) < 1)
+            self.assertEqual(76.46, round(s5.mean(), 2))
 
     def test_series_generator(self):
         """Read a series and make sure its value matches expectation."""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            channel = d7d['ENG_RPM']
+            channel = d7d['GPSvel']
             expected = channel.series()
             actual = pd.concat(list(channel.series_generator(500)))
             self.assertEqual(len(expected), len(actual))
@@ -147,22 +147,24 @@ class TestDW(unittest.TestCase):
         """Read reduced channel data and check value."""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            r = d7d['ENG_RPM'].reduced()
+            r = d7d['GPSvel'].reduced()
             r5 = r.ave.asof(5.0) # index into reduced list near time=5.0
-            self.assertTrue(abs(r5 - 3099.7) < 1)
+            self.assertEqual(76.46, round(r5, 2))
 
     def test_channel_dataframe(self):
         """Read one channel as a DataFrame"""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            df = d7d['ENG_RPM'].dataframe()
-            self.assertEqual(len(df.ENG_RPM), 4791)
+            df = d7d['GPSvel'].dataframe()
+            self.assertEqual(len(df.GPSvel), 9580)
 
     def test_dataframe(self):
         """Read all channel data as a single DataFrame."""
         with dw.open(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            self.assertEqual((18770, 20), d7d.dataframe().shape)
+            channels = [channel for channel in d7d
+                    if not d7d[channel].channel_index.startswith('CAN')]
+            self.assertEqual((11385, 8), d7d.dataframe(channels).shape)
 
     def test_encoding_uft8(self):
         """ Check that encoding is set correcly """
