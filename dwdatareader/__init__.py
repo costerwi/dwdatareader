@@ -12,7 +12,7 @@ with dw.open('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 __all__ = ['DWError', 'DWFile', 'getVersion']
-__version__ = '0.15.4'
+__version__ = '0.15.5'
 
 DLL = None # module variable accessible to other classes
 encoding = 'ISO-8859-1'  # default encoding
@@ -27,13 +27,22 @@ except ImportError:
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
-    errors = ("status OK", "error in DLL", "cannot open d7d file",
-            "file already in use", "d7d file corrupt", "memory allocation",
-            "creating uncompressed file", "extracting data",
-            "opening uncompressed file")
+    errors = {0: "status OK",
+              1: "error in DLL",
+              2: "cannot open d7d file",
+              3: "file already in use",
+              4: "d7d file corrupt",
+              5: "memory allocation",
+              6: "creating uncompressed file",
+              7: "extracting data",
+              8: "opening uncompressed file",
+              9: "invalid intermediate buffer level (ib_level)",
+              10: "CAN not supported",
+              }
 
     def __init__(self, value):
-        super(DWError, self).__init__(self.errors[value])
+        error = self.errors.get(value, 'Unknown error {}'.format(value))
+        super(DWError, self).__init__(error)
 
 
 class DWInfo(ctypes.Structure):
@@ -190,7 +199,7 @@ class DWChannel(ctypes.Structure):
         count = self.number_of_samples
         data = numpy.empty(count*self.array_size, dtype=numpy.double)
         time = numpy.empty(count, dtype=numpy.double)
-        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), ctypes.c_int64(count),
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
@@ -208,7 +217,7 @@ class DWChannel(ctypes.Structure):
         count = self.number_of_samples
         data = numpy.empty(count*self.array_size, dtype=numpy.double)
         time = numpy.empty(count, dtype=numpy.double)
-        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), count,
+        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), ctypes.c_int64(count),
                 data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
@@ -294,7 +303,7 @@ class DWChannel(ctypes.Structure):
             chunk_size = min(chunk_size, count - chunk)
             stat = DLL.DWGetScaledSamples(
                 self.index,
-                ctypes.c_int64(chunk), chunk_size,
+                ctypes.c_int64(chunk), ctypes.c_int64(chunk_size),
                 data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
