@@ -17,6 +17,7 @@ __version__ = '0.16.0'
 DLL = None # module variable accessible to other classes
 encoding = 'ISO-8859-1'  # default encoding
 
+from enum import Enum
 import os
 import ctypes
 
@@ -24,6 +25,13 @@ try:
     from collections.abc import Mapping
 except ImportError:
     from collections import Mapping
+
+import numpy as np
+import pandas as pd
+
+class NumberType(Enum):
+    real = 0
+    complex = 1
 
 class DWError(RuntimeError):
     """Interpret error number returned from dll"""
@@ -125,14 +133,30 @@ class DWChannel(ctypes.Structure):
     def description(self):
         """A short explanation of what the channel measures"""
         return self._description.decode(encoding=encoding)
+    
+    def get_scaled_samples_count(self):
+        if self.number_type() == NumberType.complex:
+            return DLL.DWGetComplexScaledSamplesCount
+        return DLL.DWGetScaledSamplesCount
+    
+    def get_scaled_samples(self):
+        if self.number_type() == NumberType.complex:
+            return DLL.DWGetComplexScaledSamples
+        return DLL.DWGetScaledSamples
 
     @property
     def number_of_samples(self):
-        count = DLL.DWGetScaledSamplesCount(self.index)
+        count = self.get_scaled_samples_count()(self.index)
         if count < 0:
-            raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
+            raise IndexError('DWGet[Complex]ScaledSamplesCount({})={} should be non-negative'.format(
                 self.index, count))
         return count
+
+    @property
+    def dtype(self):
+        if self.number_type() == NumberType.complex:
+            return np.complex128
+        return np.double
 
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
@@ -210,23 +234,29 @@ class DWChannel(ctypes.Structure):
 
     def scaled(self, arrayIndex=0):
         """Load and return full speed data as Pandas Series"""
-        import numpy
-        import pandas
         if not 0 <= arrayIndex < self.array_size:
             raise IndexError('arrayIndex is out of range')
+
         count = self.number_of_samples
-        data = numpy.empty(count*self.array_size, dtype=numpy.double)
-        time = numpy.empty(count, dtype=numpy.double)
-        stat = DLL.DWGetScaledSamples(self.index, ctypes.c_int64(0), ctypes.c_int64(count),
-                data.ctypes, time.ctypes)
+        data = np.empty(count*self.array_size, dtype=self.dtype())
+        time = np.empty(count, dtype=np.double)
+        stat = self.get_scaled_samples()(
+            self.index,
+            ctypes.c_int64(0),
+            ctypes.c_int64(count),
+            data.ctypes,
+            time.ctypes,
+        )
+
         if stat:
             raise DWError(stat)
 
-        time, ix = numpy.unique(time, return_index=True) # use unique times
-        return pandas.Series(
-                data = data.reshape(count, self.array_size)[ix, arrayIndex],
-                index = time,
-                name = self.name)
+        time, ix = np.unique(time, return_index=True) # use unique times
+        return pd.Series(
+            data=data.reshape(count, self.array_size)[ix, arrayIndex],
+            index=time,
+            name=self.name,
+        )
 
     def dataframe(self):
         """Load and return full speed channel data as Pandas Dataframe"""
@@ -294,6 +324,11 @@ class DWChannel(ctypes.Structure):
 
         return pandas.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
+    
+    def number_type(self) -> NumberType:
+        if self.data_type in [9, 10]:
+            return NumberType.complex
+        return NumberType.real
 
     def series(self):
         """Load and return timeseries of results for channel"""
@@ -421,8 +456,16 @@ class DWFile(Mapping):
             nchannels = DLL.DWGetChannelListCount()
             self.channels = (DWChannel * nchannels)()
             stat = DLL.DWGetChannelList(self.channels)
+
+            nchannels_complex = DLL.DWGetComplexChannelListCount()
+            self.channels_complex = (DWChannel * nchannels_complex)()
+            stat_complex = DLL.DWGetComplexChannelList(self.channels_complex)
+
             if stat:
                 raise DWError(stat)
+            if stat_complex:
+                raise DWError(stat_complex)
+
         except:
             self.close() # if open() fails then the file should be closed
             raise
@@ -485,6 +528,14 @@ class DWFile(Mapping):
             # Return dataframe of ALL channels by default
             channels = self.keys()
         return pandas.DataFrame({k: self[k].series() for k in channels})
+
+    def dataframe_longname(self, channels = None):
+        """Return dataframe of selected series, long-name columns"""
+        self.activate()
+        if channels is None:
+            # Return dataframe of ALL channels by default
+            channels = self.keys()
+        return pd.DataFrame({c.long_name: c.series() for c in channels})
 
     def close(self):
         """Close the d7d file and delete it if temporary"""

@@ -10,6 +10,7 @@ import sys
 import unittest
 import xml.etree.ElementTree as et
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -22,6 +23,8 @@ class TestDW(unittest.TestCase):
         import os
         self.d7dname = os.path.join(os.path.dirname(__file__),
                 "Example_Drive01.d7d")
+        self.complex_dxd_name = os.path.join(os.path.dirname(__file__),
+                "example_complex.dxd")
 
     def test_context(self):
         """Check that the d7d is open and closed according to context."""
@@ -132,7 +135,6 @@ class TestDW(unittest.TestCase):
             expected = 0.0
             self.assertEqual(actual, expected)
 
-
     @unittest.expectedFailure
     def test_CAN_channel(self):
         """Read channel data with CAN in its channel_index"""
@@ -206,6 +208,22 @@ class TestDW(unittest.TestCase):
         dw.encoding = 'utf-32'
         with self.assertRaises(dw.DWError):
             dw.open(self.d7dname)
+
+    def test_complex_channel_dtypes(self):
+        """Check complex channel dtypes"""
+        with dw.open(self.complex_dxd_name) as test_file:
+            self.assertFalse(test_file.closed, "dxd did not open")
+            complex_channels = [c for c in test_file.channels_complex]
+            np.testing.assert_array_equal(
+                test_file.dataframe_longname(complex_channels).dtypes.values,
+                np.array([np.dtype("complex128")] * len(complex_channels))
+            )
+
+    def test_complex_channel_shape(self):
+        """Check complex channel shape"""
+        with dw.open(self.complex_dxd_name) as test_file:
+            complex_channels = [c for c in test_file.channels_complex]
+            self.assertEqual(test_file.dataframe_longname(complex_channels).shape, (184, 33))
 
 
 if __name__ == '__main__':
