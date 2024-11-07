@@ -7,8 +7,10 @@ Execute with:
 import os
 import unittest
 import xml.etree.ElementTree as ET
-import pandas as pd
+
 import dwdatareader as dw
+import numpy as np
+import pandas as pd
 
 
 class TestDW(unittest.TestCase):
@@ -17,6 +19,8 @@ class TestDW(unittest.TestCase):
         import os
         self.d7dname = os.path.join(os.path.dirname(__file__),
                 "Example_Drive01.d7d")
+        self.complex_dxd_name = os.path.join(os.path.dirname(__file__),
+                "example_complex.dxd")
 
     def test_context(self):
         """Check that the d7d is open and closed according to context."""
@@ -37,7 +41,7 @@ class TestDW(unittest.TestCase):
     def test_DWError(self):
         """Should raise DWError with status and message members"""
         try:
-            with dw.DWFile(__file__) as d7d:
+            with dw.DWFile(__file__):
                 pass
         except dw.DWError as e:
             self.assertEqual(e.status, dw.DWStatus.DWSTAT_ERROR_FILE_CORRUPT)
@@ -46,13 +50,13 @@ class TestDW(unittest.TestCase):
     def test_missing_file(self):
         """Should fail to open missing file"""
         with self.assertRaises(dw.DWError):
-            with dw.DWFile("abcdef") as d7d:
+            with dw.DWFile("abcdef"):
                 pass
 
     def test_corrupt_file(self):
         """Should fail to open file of wrong format"""
         with self.assertRaises(dw.DWError):
-            with dw.DWFile(__file__) as d7d:
+            with dw.DWFile(__file__):
                 pass
 
     def test_keys(self):
@@ -155,7 +159,7 @@ class TestDW(unittest.TestCase):
             self.assertFalse(d7d.closed, 'd7d did not open')
             # Following did not fail prior to DWDataReader v4.2.0.31
             # Now all channels whose channel_index begins with CAN will fail with "Feature or operation not supported on CAN channel"
-            scaled = d7d['ENG_RPM'].scaled()
+            d7d['ENG_RPM'].scaled()
 
     def test_channel_index(self):
         """Channel type"""
@@ -233,6 +237,31 @@ class TestDW(unittest.TestCase):
         dw.encoding = 'utf-32'
         with self.assertRaises(dw.DWError):
             dw.DWFile(self.d7dname)
+
+    def test_complex_channel_dtypes(self):
+        """Check complex channel dtypes"""
+        with dw.DWFile(self.complex_dxd_name) as test_file:
+            self.assertFalse(test_file.closed, "dxd did not open")
+            complex_channels = [
+                channel_name
+                for channel_name, channel in test_file.items()
+                if channel._is_complex()
+            ]
+            np.testing.assert_array_equal(
+                # test_file.dataframe_longname(complex_channels).dtypes.values,
+                test_file.dataframe(complex_channels).dtypes.values,
+                np.array([np.dtype("complex128")] * len(complex_channels))
+            )
+
+    def test_complex_channel_shape(self):
+        """Check complex channel shape"""
+        with dw.DWFile(self.complex_dxd_name) as test_file:
+            complex_channels = [
+                channel_name
+                for channel_name, channel in test_file.items()
+                if channel._is_complex()
+            ]
+            self.assertEqual(test_file.dataframe(complex_channels).shape, (184, 33))
 
 
 if __name__ == '__main__':

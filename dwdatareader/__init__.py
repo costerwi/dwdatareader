@@ -202,11 +202,18 @@ class DWChannelStruct(ctypes.Structure):
         """The unit of measurement used by the channel"""
         return decode_bytes(self._unit)
 
+    def get_scaled_samples(self):
+        if self.data_type == DWDataType.dtBinary:
+            return DLL.DWIGetBinarySamples
+        if self._is_complex():
+            return DLL.DWIGetComplexScaledSamples
+        else:
+            return DLL.DWIGetScaledSamples
+
     @property
     def description(self):
         """A short explanation of what the channel measures"""
         return decode_bytes(self._description)
-
     @property
     def data_type(self):
         """The type of data stored in the channel"""
@@ -279,6 +286,12 @@ class DWChannel(DWChannelStruct):
         self.reader_handle = reader_handle
         self.unique_key = self.long_name  # this can be overriden in DWFile
 
+    @property
+    def dtype(self):
+        if self._is_complex():
+            return np.complex128
+        return np.double
+
     def _chan_prop_int(self, chan_prop):
         prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
         status = DLL.DWIGetChannelProps(self.reader_handle,
@@ -335,6 +348,8 @@ class DWChannel(DWChannelStruct):
         count = ctypes.c_longlong()
         if self.data_type == DWDataType.dtBinary:
             status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+        if self._is_complex():
+            status = DLL.DWIGetComplexScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
         else:
             status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
         if status: raise DWError(status)
@@ -400,14 +415,22 @@ class DWChannel(DWChannelStruct):
                 first element and the scaled data array as the second element.
         """
         count = self.number_of_samples
-        data = np.zeros(count*self.array_size, dtype=np.double)
+        data = np.zeros(count*self.array_size, dtype=self.dtype())
         time = np.zeros(count, dtype=np.double)
-        status = DLL.DWIGetScaledSamples(self.reader_handle, self.index,
-                                       ctypes.c_longlong(0), ctypes.c_longlong(self.number_of_samples),
-                                       data.ctypes, time.ctypes)
+        status = self.get_scaled_samples()(
+            self.reader_handle,
+            self.index,
+            ctypes.c_longlong(0),
+            ctypes.c_longlong(count),
+            data.ctypes,
+            time.ctypes,
+        )
         if status: raise DWError(status)
 
         return time, data
+
+    def _is_complex(self) -> pd.DataFrame:
+        return self.data_type == DWDataType.dtComplexSingle or self.data_type == DWDataType.dtComplexDouble
 
     def dataframe(self) -> pd.DataFrame:
         """
@@ -647,6 +670,14 @@ class DWFile(dict):
             status = DLL.DWIGetChannelList(self.reader_handle, channel_structs)
             if status: raise DWError(status)
 
+            ch_count_complex = ctypes.c_longlong()
+            status = DLL.DWIGetComplexChannelListCount(self.reader_handle, ctypes.byref(ch_count_complex))
+            if status: raise DWError(status)
+            channel_structs_complex = (DWChannelStruct * ch_count_complex.value)()
+
+            status = DLL.DWIGetComplexChannelList(self.reader_handle, channel_structs)
+            if status: raise DWError(status)
+
             def unique_key(base: str) -> str:
                 "Generate a unique string key starting with given base"
                 key = base  # start with the base itself
@@ -657,6 +688,11 @@ class DWFile(dict):
                 return key
 
             for channel_struct in channel_structs:
+                channel = DWChannel(channel_struct, self.reader_handle)
+                channel.unique_key = unique_key(channel.long_name)
+                self[channel.unique_key] = channel
+
+            for channel_struct in channel_structs_complex:
                 channel = DWChannel(channel_struct, self.reader_handle)
                 channel.unique_key = unique_key(channel.long_name)
                 self[channel.unique_key] = channel
@@ -762,8 +798,7 @@ class DWFile(dict):
             # Return dataframe of all channels by default
             channels = list(self.keys())
 
-        channels = [ch for ch in channels
-                    if ch not in ignore_channels]
+        channels = [ch for ch in channels if ch not in ignore_channels]
 
         if ch_type is not None:
             channels = [ch for ch in channels if self[ch].channel_type == ch_type]
