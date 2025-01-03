@@ -114,6 +114,25 @@ class TestDW(unittest.TestCase):
             expected = 1
             self.assertEqual(actual, expected)
 
+    def test_channel_scale(self):
+        """Channel Scale"""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channel = d7d['ENG_RPM']
+            actual = channel.scale
+            expected = 0.25
+            self.assertEqual(actual, expected)
+
+    def test_channel_offset(self):
+        """Channel Offset"""
+        with dw.open(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channel = d7d['ENG_RPM']
+            actual = channel.offset
+            expected = 0.0
+            self.assertEqual(actual, expected)
+
+
     @unittest.expectedFailure
     def test_CAN_channel(self):
         """Read channel data with CAN in its channel_index"""
