@@ -143,6 +143,16 @@ class DWChannel(ctypes.Structure):
             raise DWError(stat)
         return count
 
+    def _chan_prop_double(self, chan_prop):
+        count = ctypes.c_int(ctypes.sizeof(ctypes.c_double))
+        p_buff = ctypes.c_double(0)
+        stat = DLL.DWGetChannelProps(
+            self.index, ctypes.c_int(chan_prop), ctypes.byref(p_buff),
+            ctypes.byref(count))
+        if stat:
+            raise DWError(stat)
+        return p_buff
+
     def _chan_prop_str(self, chan_prop, chan_prop_len):
         len_str = self._chan_prop_int(chan_prop_len)
         p_buff = ctypes.create_string_buffer(len_str.value)
@@ -171,6 +181,14 @@ class DWChannel(ctypes.Structure):
     def long_name(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_LONGNAME,
                                    DWChannelProps.DW_CH_LONGNAME_LEN)
+
+    @property
+    def scale(self):
+        return self._chan_prop_double(DWChannelProps.DW_CH_SCALE).value
+
+    @property
+    def offset(self):
+        return self._chan_prop_double(DWChannelProps.DW_CH_OFFSET).value
 
     @property
     def arrayInfo(self):
