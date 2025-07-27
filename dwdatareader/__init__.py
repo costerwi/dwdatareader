@@ -17,10 +17,9 @@ import platform
 import atexit
 import numpy as np
 import pandas as pd
-import datetime
-import pytz
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 from enum import IntEnum
 from xml.etree import ElementTree
 from collections.abc import Mapping
@@ -99,13 +98,13 @@ class DWMeasurementInfo(ctypes.Structure):
     @property
     def start_store_time(self):
         """Return start_store_time in Python datetime format"""
-        epoch = datetime.datetime(1899, 12, 30, tzinfo=pytz.utc)
+        epoch = datetime.datetime(1899, 12, 30, tzinfo=timezone.utc)
         return epoch + datetime.timedelta(self._start_store_time)
 
     @property
     def start_measure_time(self):
         """Return start_store_time in Python datetime format"""
-        epoch = datetime.datetime(1899, 12, 30, tzinfo=pytz.utc)
+        epoch = datetime.datetime(1899, 12, 30, tzinfo=timezone.utc)
         return epoch + datetime.timedelta(self._start_store_time)
 
 class DWEvent(ctypes.Structure):
@@ -287,7 +286,7 @@ class DWChannel(DWChannelStruct):
         if narray_infos.value < 1:
             raise IndexError(f'DWIGetArrayInfoCount({self.index})={narray_infos} should be >0')
         axes = (DWArrayInfoStruct * narray_infos.value)()
-        stastatust = DLL.DWIGetArrayInfoList(self.reader_handle, self.index, axes)
+        status = DLL.DWIGetArrayInfoList(self.reader_handle, self.index, axes)
         check_lib_status(status)
 
         axes = [DWArrayInfo(ax, self) for ax in axes]
@@ -311,12 +310,6 @@ class DWChannel(DWChannelStruct):
 
         return time, data
 
-        # time, ix = np.unique(time, return_index=True) # use unique times
-        # return pd.Series(
-        #         data = data.reshape(count, self.array_size)[ix, array_index],
-        #         index = time,
-        #         name = self.name)
-
     def dataframe(self):
         """Load and return full speed channel data as Pandas Dataframe"""
         time, data = self.scaled()
@@ -328,18 +321,21 @@ class DWChannel(DWChannelStruct):
             for array_info in self.array_info:
                 columns.extend(array_info.columns)
 
-        return pd.DataFrame(
-            data=data.reshape(self.number_of_samples, self.array_size),
+        time, ix = np.unique(time, return_index=True)  # unique times required for reindexing
+        df = pd.DataFrame(
+            data=data.reshape(self.number_of_samples, self.array_size)[ix,:],
             index=time,
             columns=columns)
 
+        return df
+
     def series(self):
-        """Load and return timeseries of results for channel"""
+        """Load and return timeseries for a channel"""
         time, data = self.scaled()
         return pd.Series(data, index=time)
 
     def series_generator(self, chunk_size, array_index:int = 0):
-        """Generator yielding channel data as chunks of pandas series
+        """Generator yielding channel data as chunks of a pandas series
 
         :param chunk_size: length of chunked series
         :type array_index: int
@@ -500,8 +496,8 @@ class DWFile(Mapping):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
-    def dataframe(self, channels = None):
-        """Return dataframe of selected series"""
+    def dataframe(self, channels: List[DWChannel] = None) -> pd.DataFrame:
+        """Return dataframe of selected channels"""
         if channels is None:
             # Return dataframe of all channels by default
             channels = self.channels
@@ -519,6 +515,7 @@ class DWFile(Mapping):
                 self.reader_handle = None
             self.closed = True
             self.channels = (DWChannel * 0)()  # Delete channel metadata
+            del self
 
     def __len__(self):
         return len(self.channels)
@@ -531,7 +528,7 @@ class DWFile(Mapping):
 
     def __iter__(self):
         for ch in self.channels:
-            yield ch.name
+            yield ch
 
     def __str__(self):
         return self.name
@@ -541,7 +538,7 @@ class DWFile(Mapping):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        """Close file when it goes out of context"""
+        """Close a file when it goes out of context"""
         self.close()
 
     def __del__(self):  # object destruction
