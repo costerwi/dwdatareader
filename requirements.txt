@@ -1,5 +1,3 @@
 pandas
-matplotlib
 numpy
 pytest
-pytz
