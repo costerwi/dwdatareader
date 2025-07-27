@@ -7,7 +7,6 @@ import dwdatareader as dw
 with dw.open('myfile.d7d') as f:
     print(f.info)
     ch1 = f['chname1'].series()
-    ch1.plot()
     for ch in f.values():
         print(ch.name, ch.series().mean())
 """
@@ -17,7 +16,7 @@ import platform
 import atexit
 import numpy as np
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, List
 from enum import IntEnum
@@ -98,14 +97,14 @@ class DWMeasurementInfo(ctypes.Structure):
     @property
     def start_store_time(self):
         """Return start_store_time in Python datetime format"""
-        epoch = datetime.datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + datetime.timedelta(self._start_store_time)
+        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
+        return epoch + timedelta(self._start_store_time)
 
     @property
     def start_measure_time(self):
         """Return start_store_time in Python datetime format"""
-        epoch = datetime.datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + datetime.timedelta(self._start_store_time)
+        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
+        return epoch + timedelta(self._start_store_time)
 
 class DWEvent(ctypes.Structure):
     """Represents an event in a datafile."""
@@ -521,10 +520,16 @@ class DWFile(Mapping):
         return len(self.channels)
 
     def __getitem__(self, key):
-        for ch in self.channels: # brute force lookup
-            if ch.index == key or ch.name == key:
-                return ch
-        raise KeyError(key)
+        if type(key) is DWChannel:
+            for ch in self.channels:  # brute force lookup
+                if ch.index == key.index or ch.name == key.name:
+                    return ch
+        elif type(key) is str:
+            for ch in self.channels:  # brute force lookup
+                if ch.index == key or ch.name == key:
+                    return ch
+        else:
+            raise KeyError(key)
 
     def __iter__(self):
         for ch in self.channels:
