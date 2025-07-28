@@ -63,78 +63,6 @@ def load_library(custom_path=None):
 
 DLL: ctypes.CDLL | ctypes.WinDLL = load_library()
 
-
-class DWStatus(IntEnum):
-    """Status codes returned from library function calls"""
-    DWSTAT_OK = 0
-    DWSTAT_ERROR = 1
-    DWSTAT_ERROR_FILE_CANNOT_OPEN = 2
-    DWSTAT_ERROR_FILE_ALREADY_IN_USE = 3
-    DWSTAT_ERROR_FILE_CORRUPT = 4
-    DWSTAT_ERROR_NO_MEMORY_ALLOC = 5
-    DWSTAT_ERROR_CREATE_DEST_FILE = 6
-    DWSTAT_ERROR_EXTRACTING_FILE = 7
-    DWSTAT_ERROR_CANNOT_OPEN_EXTRACTED_FILE = 8
-    DWSTAT_ERROR_INVALID_IB_LEVEL = 9
-    DWSTAT_ERROR_CAN_NOT_SUPPORTED = 10
-    DWSTAT_ERROR_INVALID_READER = 11
-    DWSTAT_ERROR_INVALID_INDEX = 12
-    DWSTAT_ERROR_INSUFFICENT_BUFFER = 13
-
-class DWStoringType(IntEnum):
-    """Specifies the type data storing mode."""
-    ST_ALWAYS_FAST = 0
-    ST_ALWAYS_SLOW = 1
-    ST_FAST_ON_TRIGGER = 2
-    ST_FAST_ON_TRIGGER_SLOW_OTH = 3
-
-class DWMeasurementInfo(ctypes.Structure):
-    """Structure with information about the current measurement."""
-    _pack_ = 1
-    _fields_ = [
-        ("sample_rate", ctypes.c_double),
-        ("_start_measure_time", ctypes.c_double),
-        ("_start_store_time", ctypes.c_double),
-        ("duration", ctypes.c_double)
-    ]
-
-    def __str__(self):
-        return f"{self.sample_rate} Hz | {self.start_measure_time} | {self.start_store_time} | {self.duration} s"
-
-    @property
-    def start_store_time(self):
-        """Return start_store_time in Python datetime format"""
-        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + timedelta(self._start_store_time)
-
-    @property
-    def start_measure_time(self):
-        """Return start_store_time in Python datetime format"""
-        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + timedelta(self._start_store_time)
-
-class DWEvent(ctypes.Structure):
-    """Represents an event in a datafile."""
-    _pack_ = 1
-    _fields_ = [
-        ("_event_type", ctypes.c_int),
-        ("time_stamp", ctypes.c_double), # timestamp in seconds relative to start_measure_time
-        ("_event_text", ctypes.c_char * 200)
-    ]
-
-    @property
-    def event_type(self):
-        return DWEvent(self._event_type)
-
-    @property
-    def event_text(self):
-        """Readable description of the event"""
-        return decode_bytes(self._event_text)
-
-
-    def __str__(self):
-        return f"{self.event_type} {self.time_stamp} {self.event_text}"
-
 class DWArrayInfoStruct(ctypes.Structure):
     """Represents information about an axis on and array channel."""
     _pack_ = 1
@@ -189,34 +117,6 @@ class DWArrayInfo(DWArrayInfoStruct):
     def __str__(self):
         return f"DWArrayInfo index={self.index} name='{self.name}' unit='{self.unit}' size={self.size}"
 
-class DWChannelType(IntEnum):
-    """Specifies the type of channel."""
-    DW_CH_TYPE_SYNC = 0
-    DW_CH_TYPE_ASYNC = 1
-    DW_CH_TYPE_SV = 2
-
-class DWDataType(IntEnum):
-    """Specifies the channel data type."""
-    dtByte = 0
-    dtShortInt = 1
-    dtSmallInt = 2
-    dtWord = 3
-    dtInteger = 4
-    dtSingle = 5
-    dtInt64 = 6
-    dtDouble = 7
-    dtLongword = 8
-    dtComplexSingle = 9
-    dtComplexDouble = 10
-    dtText = 11
-    dtBinary = 12
-    dtCANPortData = 13
-    dtCANFDPortData = 14
-    dtBytes8 = 15
-    dtBytes16 = 16
-    dtBytes32 = 17
-    dtBytes64 = 18
-
 class DWBinarySample(ctypes.Structure):
     """Binary data structure."""
     _pack_ = 1
@@ -225,13 +125,23 @@ class DWBinarySample(ctypes.Structure):
         ("size", ctypes.c_int64)
     ]
 
-class DWComplex(ctypes.Structure):
-    """Represents a complex number with real and imaginary components."""
-    _pack_ = 1
-    _fields_ = [
-        ("re", ctypes.c_double),
-        ("im", ctypes.c_double)
-    ]
+class DWChannelProps(IntEnum):
+    """Specifies the properties that can be retrieved for a channel."""
+    DW_DATA_TYPE = 0
+    DW_DATA_TYPE_LEN_BYTES = 1
+    DW_CH_INDEX = 2
+    DW_CH_INDEX_LEN = 3
+    DW_CH_TYPE = 4
+    DW_CH_SCALE = 5
+    DW_CH_OFFSET = 6
+    DW_CH_XML = 7
+    DW_CH_XML_LEN = 8
+    DW_CH_XMLPROPS = 9
+    DW_CH_XMLPROPS_LEN = 10
+    DW_CH_CUSTOMPROPS = 11
+    DW_CH_CUSTOMPROPS_COUNT = 12
+    DW_CH_LONGNAME = 13
+    DW_CH_LONGNAME_LEN = 14
 
 class DWChannelStruct(ctypes.Structure):
     """Structure represents a Dewesoft channel."""
@@ -265,6 +175,12 @@ class DWChannelStruct(ctypes.Structure):
     def data_type(self):
         """The type of data stored in the channel"""
         return DWDataType(self._data_type)
+
+class DWChannelType(IntEnum):
+    """Specifies the type of channel."""
+    DW_CH_TYPE_SYNC = 0
+    DW_CH_TYPE_ASYNC = 1
+    DW_CH_TYPE_SV = 2
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
@@ -481,24 +397,57 @@ class DWChannel(DWChannelStruct):
         # Return as a Pandas DataFrame
         return pd.DataFrame(parsed_data)
 
+class DWComplex(ctypes.Structure):
+    """Represents a complex number with real and imaginary components."""
+    _pack_ = 1
+    _fields_ = [
+        ("re", ctypes.c_double),
+        ("im", ctypes.c_double)
+    ]
 
-class DWChannelProps(IntEnum):
-    """Specifies the properties that can be retrieved for a channel."""
-    DW_DATA_TYPE = 0
-    DW_DATA_TYPE_LEN_BYTES = 1
-    DW_CH_INDEX = 2
-    DW_CH_INDEX_LEN = 3
-    DW_CH_TYPE = 4
-    DW_CH_SCALE = 5
-    DW_CH_OFFSET = 6
-    DW_CH_XML = 7
-    DW_CH_XML_LEN = 8
-    DW_CH_XMLPROPS = 9
-    DW_CH_XMLPROPS_LEN = 10
-    DW_CH_CUSTOMPROPS = 11
-    DW_CH_CUSTOMPROPS_COUNT = 12
-    DW_CH_LONGNAME = 13
-    DW_CH_LONGNAME_LEN = 14
+class DWDataType(IntEnum):
+    """Specifies the channel data type."""
+    dtByte = 0
+    dtShortInt = 1
+    dtSmallInt = 2
+    dtWord = 3
+    dtInteger = 4
+    dtSingle = 5
+    dtInt64 = 6
+    dtDouble = 7
+    dtLongword = 8
+    dtComplexSingle = 9
+    dtComplexDouble = 10
+    dtText = 11
+    dtBinary = 12
+    dtCANPortData = 13
+    dtCANFDPortData = 14
+    dtBytes8 = 15
+    dtBytes16 = 16
+    dtBytes32 = 17
+    dtBytes64 = 18
+
+class DWEvent(ctypes.Structure):
+    """Represents an event in a datafile."""
+    _pack_ = 1
+    _fields_ = [
+        ("_event_type", ctypes.c_int),
+        ("time_stamp", ctypes.c_double), # timestamp in seconds relative to start_measure_time
+        ("_event_text", ctypes.c_char * 200)
+    ]
+
+    @property
+    def event_type(self):
+        return DWEvent(self._event_type)
+
+    @property
+    def event_text(self):
+        """Readable description of the event"""
+        return decode_bytes(self._event_text)
+
+
+    def __str__(self):
+        return f"{self.event_type} {self.time_stamp} {self.event_text}"
 
 class DWFile(Mapping):
     """Data file type mapping channel names their metadata"""
@@ -572,7 +521,7 @@ class DWFile(Mapping):
             status = DLL.DWIGetHeaderEntryTextF(self.reader_handle, i, text_, len(text_))
             check_lib_status(status)
             text = decode_bytes(text_.value)
-            if len(text) and not(text.startswith('Select...') or 
+            if len(text) and not(text.startswith('Select...') or
                     text.startswith('To fill out')):
                 status = DLL.DWIGetHeaderEntryNameF(self.reader_handle, i, name_, len(name_))
                 check_lib_status(status)
@@ -666,6 +615,54 @@ class DWFile(Mapping):
     def __del__(self):  # object destruction
         self.close()
 
+class DWMeasurementInfo(ctypes.Structure):
+    """Structure with information about the current measurement."""
+    _pack_ = 1
+    _fields_ = [
+        ("sample_rate", ctypes.c_double),
+        ("_start_measure_time", ctypes.c_double),
+        ("_start_store_time", ctypes.c_double),
+        ("duration", ctypes.c_double)
+    ]
+
+    def __str__(self):
+        return f"{self.sample_rate} Hz | {self.start_measure_time} | {self.start_store_time} | {self.duration} s"
+
+    @property
+    def start_store_time(self):
+        """Return start_store_time in Python datetime format"""
+        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
+        return epoch + timedelta(self._start_store_time)
+
+    @property
+    def start_measure_time(self):
+        """Return start_store_time in Python datetime format"""
+        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
+        return epoch + timedelta(self._start_store_time)
+
+class DWStatus(IntEnum):
+    """Status codes returned from library function calls"""
+    DWSTAT_OK = 0
+    DWSTAT_ERROR = 1
+    DWSTAT_ERROR_FILE_CANNOT_OPEN = 2
+    DWSTAT_ERROR_FILE_ALREADY_IN_USE = 3
+    DWSTAT_ERROR_FILE_CORRUPT = 4
+    DWSTAT_ERROR_NO_MEMORY_ALLOC = 5
+    DWSTAT_ERROR_CREATE_DEST_FILE = 6
+    DWSTAT_ERROR_EXTRACTING_FILE = 7
+    DWSTAT_ERROR_CANNOT_OPEN_EXTRACTED_FILE = 8
+    DWSTAT_ERROR_INVALID_IB_LEVEL = 9
+    DWSTAT_ERROR_CAN_NOT_SUPPORTED = 10
+    DWSTAT_ERROR_INVALID_READER = 11
+    DWSTAT_ERROR_INVALID_INDEX = 12
+    DWSTAT_ERROR_INSUFFICENT_BUFFER = 13
+
+class DWStoringType(IntEnum):
+    """Specifies the type data storing mode."""
+    ST_ALWAYS_FAST = 0
+    ST_ALWAYS_SLOW = 1
+    ST_FAST_ON_TRIGGER = 2
+    ST_FAST_ON_TRIGGER_SLOW_OTH = 3
 
 def get_version():
     ver_major = ctypes.c_int()
