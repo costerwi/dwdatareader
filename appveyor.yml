@@ -6,8 +6,6 @@ image:
 
 environment:
   matrix:
-  - TOXENV: py27  # https://devguide.python.org/devcycle/#end-of-life-branches
-  - TOXENV: py37
   - TOXENV: py310
 
 build: false
