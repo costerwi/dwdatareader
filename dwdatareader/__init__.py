@@ -458,8 +458,8 @@ class DWFile(Mapping):
         try:
             # Open the d7d file
             self.info = DWMeasurementInfo()
-            # DWIOpenDataFile outputs DWFileInfo struct, which is deprecated
-            status = DLL.DWIOpenDataFile(self.reader_handle, source.encode(encoding=encoding), ctypes.byref(self.info))
+            # DWIOpenDataFile outputs DWFileInfo struct, however DWFile is marked as deprecated
+            status = DLL.DWIOpenDataFile(self.reader_handle, create_string_buffer(source), ctypes.byref(self.info))
             check_lib_status(status)
 
             #  to fill all DWMeasurementInfo fields
