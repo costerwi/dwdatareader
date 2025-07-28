@@ -417,7 +417,7 @@ class DWFile(Mapping):
         atexit.register(self.close)  # for intepreter shutdown
 
         if source:
-            self.open(source) # If this fails then the instance is not constructed
+            self.open(source)
 
     def open(self, source):
         """Open the specified file and read channel metadata"""
