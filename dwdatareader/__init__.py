@@ -300,8 +300,8 @@ class DWChannel(DWChannelStruct):
         if not 0 <= array_index < self.array_size:
             raise IndexError('array index is out of range')
         count = self.number_of_samples
-        data = np.empty(count*self.array_size, dtype=np.double)
-        time = np.empty(count, dtype=np.double)
+        data = np.zeros(count*self.array_size, dtype=np.double)
+        time = np.zeros(count, dtype=np.double)
         status = DLL.DWIGetScaledSamples(self.reader_handle, self.index,
                                        ctypes.c_int64(0), ctypes.c_int64(self.number_of_samples),
                                        data.ctypes, time.ctypes)
@@ -342,8 +342,8 @@ class DWChannel(DWChannelStruct):
         """
         count = self.number_of_samples
         chunk_size = min(chunk_size, count)
-        data = np.empty(chunk_size*self.array_size, dtype=np.double)
-        time = np.empty(chunk_size)
+        data = np.zeros(chunk_size*self.array_size, dtype=np.double)
+        time = np.zeros(chunk_size)
         for chunk in range(0, count, chunk_size):
             chunk_size = min(chunk_size, count - chunk)
             status = DLL.DWIGetScaledSamples(
