@@ -462,7 +462,7 @@ class DWFile(Mapping):
             status = DLL.DWIOpenDataFile(self.reader_handle, create_string_buffer(source), ctypes.byref(self.info))
             check_lib_status(status)
 
-            #  to fill all DWMeasurementInfo fields
+            # fill all DWMeasurementInfo fields not filled by DWIOpenDataFile
             status = DLL.DWIGetMeasurementInfo(self.reader_handle, ctypes.byref(self.info))
             check_lib_status(status)
             self.closed = False
