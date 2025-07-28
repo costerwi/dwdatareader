@@ -464,6 +464,7 @@ class DWFile(Mapping):
         self.closed = True  # bool indicating the current state of the reader
         self.info = None
         self.channels = None
+        self.binary_channels = None
 
         reader_handle = ctypes.c_void_p()
         status = DLL.DWICreateReader(ctypes.byref(reader_handle))
@@ -498,6 +499,17 @@ class DWFile(Mapping):
             check_lib_status(status)
 
             self.channels = [DWChannel(ch, self.reader_handle) for ch in channel_structs]
+
+            # read binary channel metadata
+            bin_ch_count = ctypes.c_int()
+            status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
+            check_lib_status(status)
+            bin_channel_structs = (DWChannelStruct * bin_ch_count.value)()
+
+            status = DLL.DWIGetBinChannelList(self.reader_handle, bin_channel_structs)
+            check_lib_status(status)
+
+            self.binary_channels = [DWChannel(ch, self.reader_handle) for ch in bin_channel_structs]
 
         except RuntimeError as e:
             print(e)
