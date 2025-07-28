@@ -81,6 +81,13 @@ class DWStatus(IntEnum):
     DWSTAT_ERROR_INVALID_INDEX = 12
     DWSTAT_ERROR_INSUFFICENT_BUFFER = 13
 
+class DWStoringType(IntEnum):
+    """Specifies the type data storing mode."""
+    ST_ALWAYS_FAST = 0
+    ST_ALWAYS_SLOW = 1
+    ST_FAST_ON_TRIGGER = 2
+    ST_FAST_ON_TRIGGER_SLOW_OTH = 3
+
 class DWMeasurementInfo(ctypes.Structure):
     """Structure with information about the current measurement."""
     _pack_ = 1
@@ -177,6 +184,28 @@ class DWArrayInfo(DWArrayInfoStruct):
     def __str__(self):
         return f"DWArrayInfo index={self.index} name='{self.name}' unit='{self.unit}' size={self.size}"
 
+class DWDataType(IntEnum):
+    """Specifies the channel data type."""
+    dtByte = 0
+    dtShortInt = 1
+    dtSmallInt = 2
+    dtWord = 3
+    dtInteger = 4
+    dtSingle = 5
+    dtInt64 = 6
+    dtDouble = 7
+    dtLongword = 8
+    dtComplexSingle = 9
+    dtComplexDouble = 10
+    dtText = 11
+    dtBinary = 12
+    dtCANPortData = 13
+    dtCANFDPortData = 14
+    dtBytes8 = 15
+    dtBytes16 = 16
+    dtBytes32 = 17
+    dtBytes64 = 18
+
 class DWChannelStruct(ctypes.Structure):
     """Structure represents a Dewesoft channel."""
     _pack_ = 1
@@ -204,6 +233,11 @@ class DWChannelStruct(ctypes.Structure):
     def description(self):
         """A short explanation of what the channel measures"""
         return decode_bytes(self._description)
+
+    @property
+    def data_type(self):
+        """The type of data stored in the channel"""
+        return DWDataType(self._data_type)
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
@@ -468,6 +502,13 @@ class DWFile(Mapping):
                 check_lib_status(status)
                 header[decode_bytes(name_.value)] = text
         return header
+
+    @property
+    def storing_type(self):
+        storing_type = ctypes.c_int()
+        status = DLL.DWIGetStoringType(self.reader_handle, ctypes.byref(storing_type))
+        check_lib_status(status)
+        return DWStoringType(storing_type.value)
 
     def export_header(self, file_name):
         """Export header as .xml file"""
