@@ -450,8 +450,6 @@ class DWChannel(DWChannelStruct):
 
     def bin_dataframe(self):
         sample_cnt = self.number_of_samples
-        total_count: int = sample_cnt * self.array_size
-        samples = (DWBinarySample * total_count)()
 
         assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
         assert self.array_size == 1
@@ -462,16 +460,16 @@ class DWChannel(DWChannelStruct):
                                          timestamps)
         check_lib_status(status)
 
-        BIN_BUF_SIZE = 1024
+        bin_buf_size = 1024
         parsed_data = []
         for i in range(sample_cnt):
             bin_rec = data[i]
-            bin_buf = create_string_buffer(BIN_BUF_SIZE)
+            bin_buf = create_string_buffer(bin_buf_size)
             bin_buf_pos = ctypes.c_longlong(0)
             status = DLL.DWIGetBinData(
                 self.reader_handle, self.index,
                 bin_rec, bin_buf,
-                ctypes.byref(bin_buf_pos), BIN_BUF_SIZE
+                ctypes.byref(bin_buf_pos), bin_buf_size
             )
             check_lib_status(status)
             # Append timestamp and decoded binary data
