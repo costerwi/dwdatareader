@@ -189,6 +189,12 @@ class DWArrayInfo(DWArrayInfoStruct):
     def __str__(self):
         return f"DWArrayInfo index={self.index} name='{self.name}' unit='{self.unit}' size={self.size}"
 
+class DWChannelType(IntEnum):
+    """Specifies the type of channel."""
+    DW_CH_TYPE_SYNC = 0
+    DW_CH_TYPE_ASYNC = 1
+    DW_CH_TYPE_SV = 2
+
 class DWDataType(IntEnum):
     """Specifies the channel data type."""
     dtByte = 0
@@ -270,7 +276,10 @@ class DWChannel(DWChannelStruct):
     @property
     def number_of_samples(self):
         count = ctypes.c_longlong()
-        status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+        if self.data_type == DWDataType.dtBinary:
+            status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+        else:
+            status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
         check_lib_status(status)
         return count.value
 
@@ -304,7 +313,7 @@ class DWChannel(DWChannelStruct):
 
     @property
     def channel_type(self):
-        return self._chan_prop_int(DWChannelProps.DW_CH_TYPE).value
+        return DWChannelType(self._chan_prop_int(DWChannelProps.DW_CH_TYPE).value)
 
     @property
     def channel_index(self):
@@ -438,6 +447,42 @@ class DWChannel(DWChannelStruct):
 
         return pd.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
+
+    def bin_dataframe(self):
+        sample_cnt = self.number_of_samples
+        total_count: int = sample_cnt * self.array_size
+        samples = (DWBinarySample * total_count)()
+
+        assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
+        assert self.array_size == 1
+
+        timestamps = (ctypes.c_double * sample_cnt)()
+        data = (DWBinarySample * sample_cnt)()
+        status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_int64(0), sample_cnt, data,
+                                         timestamps)
+        check_lib_status(status)
+
+        BIN_BUF_SIZE = 1024
+        parsed_data = []
+        for i in range(sample_cnt):
+            bin_rec = data[i]
+            bin_buf = create_string_buffer(BIN_BUF_SIZE)
+            bin_buf_pos = ctypes.c_longlong(0)
+            status = DLL.DWIGetBinData(
+                self.reader_handle, self.index,
+                bin_rec, bin_buf,
+                ctypes.byref(bin_buf_pos), BIN_BUF_SIZE
+            )
+            check_lib_status(status)
+            # Append timestamp and decoded binary data
+            parsed_data.append({
+                "Timestamp": timestamps[i],
+                "Value": decode_bytes(bin_buf.value)
+            })
+
+        # Return as a Pandas DataFrame
+        return pd.DataFrame(parsed_data)
+
 
 class DWChannelProps(IntEnum):
     """Specifies the properties that can be retrieved for a channel."""
