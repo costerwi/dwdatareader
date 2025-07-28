@@ -117,18 +117,25 @@ class DWEvent(ctypes.Structure):
     """Represents an event in a datafile."""
     _pack_ = 1
     _fields_ = [
-        ("event_type", ctypes.c_int),  # Using DWEventType enum
-        ("time_stamp", ctypes.c_double),
+        ("_event_type", ctypes.c_int),
+        ("time_stamp", ctypes.c_double), # timestamp in seconds relative to start_measure_time
         ("_event_text", ctypes.c_char * 200)
     ]
+
+    @property
+    def event_type(self):
+        return DWEvent(self._event_type)
 
     @property
     def event_text(self):
         """Readable description of the event"""
         return decode_bytes(self._event_text)
 
+
+
+
     def __str__(self):
-        return f"{self.time_stamp} {self.event_text}"
+        return f"{self.event_type} {self.time_stamp} {self.event_text}"
 
 class DWArrayInfoStruct(ctypes.Structure):
     """Represents information about an axis on and array channel."""
@@ -205,6 +212,14 @@ class DWDataType(IntEnum):
     dtBytes16 = 16
     dtBytes32 = 17
     dtBytes64 = 18
+
+class DWComplex(ctypes.Structure):
+    """Represents a complex number with real and imaginary components."""
+    _pack_ = 1
+    _fields_ = [
+        ("re", ctypes.c_double),
+        ("im", ctypes.c_double)
+    ]
 
 class DWChannelStruct(ctypes.Structure):
     """Structure represents a Dewesoft channel."""
