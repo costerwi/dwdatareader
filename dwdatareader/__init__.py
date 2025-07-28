@@ -132,8 +132,6 @@ class DWEvent(ctypes.Structure):
         return decode_bytes(self._event_text)
 
 
-
-
     def __str__(self):
         return f"{self.event_type} {self.time_stamp} {self.event_text}"
 
@@ -212,6 +210,14 @@ class DWDataType(IntEnum):
     dtBytes16 = 16
     dtBytes32 = 17
     dtBytes64 = 18
+
+class DWBinarySample(ctypes.Structure):
+    """Binary data structure."""
+    _pack_ = 1
+    _fields_ = [
+        ("position", ctypes.c_int64),
+        ("size", ctypes.c_int64)
+    ]
 
 class DWComplex(ctypes.Structure):
     """Represents a complex number with real and imaginary components."""
