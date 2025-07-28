@@ -448,7 +448,7 @@ class DWFile(Mapping):
         status = DLL.DWICreateReader(ctypes.byref(reader_handle))
         check_lib_status(status)
         self.reader_handle = reader_handle
-        atexit.register(self.close)  # for intepreter shutdown
+        atexit.register(self.close)  # for interpreter shutdown
 
         if source:
             self.open(source)
@@ -458,7 +458,7 @@ class DWFile(Mapping):
         try:
             # Open the d7d file
             self.info = DWMeasurementInfo()
-            # DWIOpenDataFile outputs DWFileInfo struct, which is depricated
+            # DWIOpenDataFile outputs DWFileInfo struct, which is deprecated
             status = DLL.DWIOpenDataFile(self.reader_handle, source.encode(encoding=encoding), ctypes.byref(self.info))
             check_lib_status(status)
 
