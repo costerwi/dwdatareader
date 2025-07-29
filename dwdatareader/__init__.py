@@ -61,7 +61,7 @@ def load_library(custom_path=None):
         # Fallback to direct library name loading
         return loader(library_name)
 
-DLL: ctypes.CDLL | ctypes.WinDLL = load_library()
+DLL: ctypes.CDLL | ctypes.WinDLL
 
 class DWArrayInfoStruct(ctypes.Structure):
     """Represents information about an axis on and array channel."""
@@ -682,6 +682,9 @@ def get_version():
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
 
 def open_file(source):
+    global DLL
+    DLL = load_library()
+
     return DWFile(source)
 
 def create_string_buffer(string_value, buffer_size=None):
@@ -698,8 +701,6 @@ def decode_bytes(byte_string):
 
 def check_lib_status(status: DWStatus):
     """Check the status returned by the library functions."""
-    global DLL
-
     if status == DWStatus.DWSTAT_OK:
         return
 
