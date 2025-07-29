@@ -264,22 +264,55 @@ class DWChannel(DWChannelStruct):
 
     def dataframe(self):
         """Load and return full speed channel data as Pandas Dataframe"""
-        time, data = self.scaled()
+        if self.data_type == DWDataType.dtBinary:
+            sample_cnt = self.number_of_samples
 
-        columns = []
-        if self.array_size == 1:
-            columns.append(self.name)
-        else:  # Channel has multiple axes
-            for array_info in self.array_info:
-                columns.extend(array_info.columns)
+            assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
+            assert self.array_size == 1
 
-        time, ix = np.unique(time, return_index=True)  # unique times required for reindexing
-        df = pd.DataFrame(
-            data=data.reshape(self.number_of_samples, self.array_size)[ix,:],
-            index=time,
-            columns=columns)
+            timestamps = (ctypes.c_double * sample_cnt)()
+            data = (DWBinarySample * sample_cnt)()
+            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_int64(0), sample_cnt, data,
+                                             timestamps)
+            check_lib_status(status)
 
-        return df
+            bin_buf_size = 1024
+            parsed_data = []
+            for i in range(sample_cnt):
+                bin_rec = data[i]
+                bin_buf = create_string_buffer(bin_buf_size)
+                bin_buf_pos = ctypes.c_longlong(0)
+                status = DLL.DWIGetBinData(
+                    self.reader_handle, self.index,
+                    bin_rec, bin_buf,
+                    ctypes.byref(bin_buf_pos), bin_buf_size
+                )
+                check_lib_status(status)
+                # Append timestamp and decoded binary data
+                parsed_data.append({
+                    "Timestamp": timestamps[i],
+                    "Value": decode_bytes(bin_buf.value)
+                })
+
+            # Return as a Pandas DataFrame
+            return pd.DataFrame(parsed_data)
+        else:
+            time, data = self.scaled()
+
+            columns = []
+            if self.array_size == 1:
+                columns.append(self.name)
+            else:  # Channel has multiple axes
+                for array_info in self.array_info:
+                    columns.extend(array_info.columns)
+
+            time, ix = np.unique(time, return_index=True)  # unique times required for reindexing
+            df = pd.DataFrame(
+                data=data.reshape(self.number_of_samples, self.array_size)[ix,:],
+                index=time,
+                columns=columns)
+
+            return df
 
     def series(self):
         """Load and return timeseries for a channel"""
@@ -336,39 +369,6 @@ class DWChannel(DWChannelStruct):
 
         return pd.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
-
-    def bin_dataframe(self):
-        sample_cnt = self.number_of_samples
-
-        assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
-        assert self.array_size == 1
-
-        timestamps = (ctypes.c_double * sample_cnt)()
-        data = (DWBinarySample * sample_cnt)()
-        status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_int64(0), sample_cnt, data,
-                                         timestamps)
-        check_lib_status(status)
-
-        bin_buf_size = 1024
-        parsed_data = []
-        for i in range(sample_cnt):
-            bin_rec = data[i]
-            bin_buf = create_string_buffer(bin_buf_size)
-            bin_buf_pos = ctypes.c_longlong(0)
-            status = DLL.DWIGetBinData(
-                self.reader_handle, self.index,
-                bin_rec, bin_buf,
-                ctypes.byref(bin_buf_pos), bin_buf_size
-            )
-            check_lib_status(status)
-            # Append timestamp and decoded binary data
-            parsed_data.append({
-                "Timestamp": timestamps[i],
-                "Value": decode_bytes(bin_buf.value)
-            })
-
-        # Return as a Pandas DataFrame
-        return pd.DataFrame(parsed_data)
 
 class DWComplex(ctypes.Structure):
     """Represents a complex number with real and imaginary components."""
