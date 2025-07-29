@@ -433,6 +433,9 @@ class DWFile(Mapping):
         self.channels = None
         self.binary_channels = None
 
+        global DLL
+        DLL = load_library()
+
         reader_handle = ctypes.c_void_p()
         status = DLL.DWICreateReader(ctypes.byref(reader_handle))
         check_lib_status(status)
