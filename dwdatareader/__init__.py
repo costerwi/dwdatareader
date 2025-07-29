@@ -27,40 +27,6 @@ __all__ = ['get_version', 'open_file']
 __version__ = '1.0.0'
 
 encoding = 'utf-8'  # default encoding
-
-def load_library(custom_path=None):
-    """
-    Load a shared or dynamic library based on platform and architecture.
-    :param custom_path: Optional custom path to load the library from.
-    :return: Loaded library object.
-    """
-    library_extensions = {
-        "Linux": ".so",
-        "Darwin": ".dylib",
-        "Windows": ".dll",
-    }
-
-    system = platform.system()
-    is_64bit = platform.architecture()[0] == '64bit'
-
-    loader = ctypes.CDLL if system != "Windows" else ctypes.WinDLL
-    if custom_path is not None:
-        return loader(custom_path)
-
-    base_name = "DWDataReaderLib"
-    arch_suffix = "64" if is_64bit else ""
-    extension = library_extensions.get(system, "")
-
-    library_name = f"{base_name}{arch_suffix}{extension}"
-    library_path = Path(__file__).parent / library_name
-
-    try:
-        # Load the library
-        return loader(str(library_path))
-    except OSError:
-        # Fallback to direct library name loading
-        return loader(library_name)
-
 DLL: ctypes.CDLL | ctypes.WinDLL
 
 class DWArrayInfoStruct(ctypes.Structure):
@@ -686,6 +652,39 @@ def open_file(source):
     DLL = load_library()
 
     return DWFile(source)
+
+def load_library(custom_path=None):
+    """
+    Load a shared or dynamic library based on platform and architecture.
+    :param custom_path: Optional custom path to load the library from.
+    :return: Loaded library object.
+    """
+    library_extensions = {
+        "Linux": ".so",
+        "Darwin": ".dylib",
+        "Windows": ".dll",
+    }
+
+    system = platform.system()
+    is_64bit = platform.architecture()[0] == '64bit'
+
+    loader = ctypes.CDLL if system != "Windows" else ctypes.WinDLL
+    if custom_path is not None:
+        return loader(custom_path)
+
+    base_name = "DWDataReaderLib"
+    arch_suffix = "64" if is_64bit else ""
+    extension = library_extensions.get(system, "")
+
+    library_name = f"{base_name}{arch_suffix}{extension}"
+    library_path = Path(__file__).parent / library_name
+
+    try:
+        # Load the library
+        return loader(str(library_path))
+    except OSError:
+        # Fallback to direct library name loading
+        return loader(library_name)
 
 def create_string_buffer(string_value, buffer_size=None):
     """Create a string buffer with proper encoding."""
