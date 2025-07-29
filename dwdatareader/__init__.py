@@ -560,7 +560,6 @@ class DWFile(Mapping):
                 self.reader_handle = None
             self.closed = True
             self.channels = (DWChannel * 0)()  # Delete channel metadata
-            del self
 
     def __len__(self):
         return len(self.channels)
@@ -653,9 +652,6 @@ def get_version():
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
 
 def open_file(source):
-    global DLL
-    DLL = load_library()
-
     return DWFile(source)
 
 def load_library(custom_path=None):
