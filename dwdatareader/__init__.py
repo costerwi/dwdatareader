@@ -87,8 +87,8 @@ class DWBinarySample(ctypes.Structure):
     """Binary data structure."""
     _pack_ = 1
     _fields_ = [
-        ("position", ctypes.c_int64),
-        ("size", ctypes.c_int64)
+        ("position", ctypes.c_longlong),
+        ("size", ctypes.c_longlong)
     ]
 
 class DWChannelProps(IntEnum):
