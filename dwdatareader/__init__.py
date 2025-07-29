@@ -173,7 +173,8 @@ class DWChannel(DWChannelStruct):
         return count.value
 
     def _chan_prop_int(self, chan_prop):
-        count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
+        count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
+        # count = ctypes.c_longlong()
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index,
                                       ctypes.c_int(chan_prop),
@@ -183,7 +184,8 @@ class DWChannel(DWChannelStruct):
         return count
 
     def _chan_prop_double(self, chan_prop):
-        count = ctypes.c_int(ctypes.sizeof(ctypes.c_double))
+        count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_double))
+        # count = ctypes.c_longlong()
         p_buff = ctypes.c_double(0)
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index, ctypes.c_int(chan_prop), ctypes.byref(p_buff),
@@ -232,7 +234,7 @@ class DWChannel(DWChannelStruct):
         """Return list of DWArrayInfo axes for this channel"""
         if self.array_size < 2:
             return []
-        narray_infos = ctypes.c_int()
+        narray_infos = ctypes.c_longlong()
         status = DLL.DWIGetArrayInfoCount(self.reader_handle, self.index, ctypes.byref(narray_infos)) # available array axes for this channel
         check_lib_status(status)
         if narray_infos.value < 1:
@@ -256,7 +258,7 @@ class DWChannel(DWChannelStruct):
         data = np.zeros(count*self.array_size, dtype=np.double)
         time = np.zeros(count, dtype=np.double)
         status = DLL.DWIGetScaledSamples(self.reader_handle, self.index,
-                                       ctypes.c_int64(0), ctypes.c_int64(self.number_of_samples),
+                                       ctypes.c_longlong(0), ctypes.c_longlong(self.number_of_samples),
                                        data.ctypes, time.ctypes)
         check_lib_status(status)
 
@@ -272,7 +274,7 @@ class DWChannel(DWChannelStruct):
 
             timestamps = (ctypes.c_double * sample_cnt)()
             data = (DWBinarySample * sample_cnt)()
-            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_int64(0), sample_cnt, data,
+            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, data,
                                              timestamps)
             check_lib_status(status)
 
@@ -335,7 +337,7 @@ class DWChannel(DWChannelStruct):
             status = DLL.DWIGetScaledSamples(
                 self.reader_handle,
                 self.index,
-                ctypes.c_int64(chunk), ctypes.c_int64(chunk_size),
+                ctypes.c_longlong(chunk), ctypes.c_longlong(chunk_size),
                 data.ctypes, time.ctypes)
             check_lib_status(status)
 
@@ -347,7 +349,7 @@ class DWChannel(DWChannelStruct):
 
     def reduced(self):
         """Load reduced (averaged) data as Pandas DataFrame"""
-        count = ctypes.c_int()
+        count = ctypes.c_longlong()
         block_size = ctypes.c_double()
         status = DLL.DWIGetReducedValuesCount(self.reader_handle, self.index,
             ctypes.byref(count), ctypes.byref(block_size))
@@ -456,7 +458,7 @@ class DWFile(Mapping):
             self.closed = False
 
             # Read channel metadata
-            ch_count = ctypes.c_int()
+            ch_count = ctypes.c_longlong()
             status = DLL.DWIGetChannelListCount(self.reader_handle, ctypes.byref(ch_count))
             check_lib_status(status)
             channel_structs = (DWChannelStruct * ch_count.value)()
@@ -467,7 +469,7 @@ class DWFile(Mapping):
             self.channels = [DWChannel(ch, self.reader_handle) for ch in channel_structs]
 
             # read binary channel metadata
-            bin_ch_count = ctypes.c_int()
+            bin_ch_count = ctypes.c_longlong()
             status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
             check_lib_status(status)
             bin_channel_structs = (DWChannelStruct * bin_ch_count.value)()
