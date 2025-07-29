@@ -184,10 +184,17 @@ class DWChannelType(IntEnum):
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
+        # super().__init__(*args, **kw)
+        # ctypes.memmove(ctypes.addressof(self), ctypes.addressof(channel_struct), ctypes.sizeof(channel_struct))
+        # self.reader_handle = reader_handle
         super().__init__(*args, **kw)
-        ctypes.memmove(ctypes.addressof(self), ctypes.addressof(channel_struct), ctypes.sizeof(channel_struct))
-        self.reader_handle = reader_handle
 
+        # Create a new instance by copying the buffer memory
+        new_struct = self.__class__.from_buffer_copy(bytearray(channel_struct))
+        for field_name, _ in self._fields_:
+            setattr(self, field_name, getattr(new_struct, field_name))
+
+        self.reader_handle = reader_handle
 
     @property
     def number_of_samples(self):
@@ -472,8 +479,9 @@ class DWFile(Mapping):
         try:
             # Open the d7d file
             self.info = DWMeasurementInfo()
+            c_source = ctypes.c_char_p(source.encode())
             # DWIOpenDataFile outputs DWFileInfo struct, however DWFile is marked as deprecated
-            status = DLL.DWIOpenDataFile(self.reader_handle, create_string_buffer(source), ctypes.byref(self.info))
+            status = DLL.DWIOpenDataFile(self.reader_handle, c_source, ctypes.byref(self.info))
             check_lib_status(status)
 
             # fill all DWMeasurementInfo fields not filled by DWIOpenDataFile
@@ -537,7 +545,8 @@ class DWFile(Mapping):
 
     def export_header(self, file_name):
         """Export header as .xml file"""
-        status = DLL.DWIExportHeader(self.reader_handle, create_string_buffer(file_name))
+        c_file_name = ctypes.c_char_p(file_name.encode())
+        status = DLL.DWIExportHeader(self.reader_handle, c_file_name)
         check_lib_status(status)
         return 0
 
