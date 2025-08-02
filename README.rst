@@ -1,10 +1,6 @@
 dwdatareader
 ============
 
-.. image:: https://travis-ci.com/costerwi/dwdatareader.svg?branch=master
-   :alt: DWDataReader build status on Travis CI
-   :target: https://travis-ci.com/costerwi/dwdatareader
-
 .. image:: https://ci.appveyor.com/api/projects/status/a2qssrmuepbx224i/branch/master?svg=true
    :alt: DWDataReader build status on Appveyor
    :target: https://ci.appveyor.com/project/costerwi/dwdatareader/branch/master
