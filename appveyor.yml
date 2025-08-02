@@ -7,15 +7,15 @@ image:
 environment:
   matrix:
   - TOXENV: py39
-    VENV: ~/venv3.9
+    VENV: venv3.9
   - TOXENV: py310
-    VENV: ~/venv3.10
+    VENV: venv3.10
 
 build: false
 
 install:
   # - py --list
-  - sh: source ${VENV}/bin/activate
+  - sh: source ~/$VENV/bin/activate
   - python -m pip install tox
 
 test_script:
