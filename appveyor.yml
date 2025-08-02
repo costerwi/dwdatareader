@@ -13,7 +13,8 @@ build: false
 
 install:
   # - py --list
-  - python -m ensurepip --upgrade
+  - sh: source ~/venv3.9/bin/activate
+  - sh: source ~/venv3.10/bin/activate
   - python -m pip install tox
 
 test_script:
