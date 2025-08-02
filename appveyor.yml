@@ -4,18 +4,11 @@ image:
   - Visual Studio 2019
   - Ubuntu
 
-environment:
-  matrix:
-  - TOXENV: py39
-    VENV: venv3.9
-  - TOXENV: py310
-    VENV: venv3.10
-
 build: false
 
 install:
   # - py --list
-  - sh: source ~/$VENV/bin/activate
+  - sh: for d in ~/venv3*/bin; do PATH=$PATH:$d; done
   - python -m pip install tox
 
 test_script:
