@@ -449,7 +449,7 @@ class DWFile(Mapping):
         try:
             # Open the d7d file
             self.info = DWMeasurementInfo()
-            c_source = ctypes.c_char_p(source.encode())
+            c_source = ctypes.c_char_p(source.encode(encoding=encoding))
             # DWIOpenDataFile outputs DWFileInfo struct, however DWFile is marked as deprecated
             status = DLL.DWIOpenDataFile(self.reader_handle, c_source, ctypes.byref(self.info))
             check_lib_status(status)
@@ -515,7 +515,7 @@ class DWFile(Mapping):
 
     def export_header(self, file_name):
         """Export header as .xml file"""
-        c_file_name = ctypes.c_char_p(file_name.encode())
+        c_file_name = ctypes.c_char_p(file_name.encode(encoding=encoding))
         status = DLL.DWIExportHeader(self.reader_handle, c_file_name)
         check_lib_status(status)
         return 0
