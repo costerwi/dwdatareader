@@ -646,6 +646,7 @@ def get_version():
     ver_major = ctypes.c_int()
     ver_minor = ctypes.c_int()
     ver_patch = ctypes.c_int()
+    DLL = load_library()
     DLL.DWGetVersionEx(ctypes.byref(ver_major), ctypes.byref(ver_minor), ctypes.byref(ver_patch))
 
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
