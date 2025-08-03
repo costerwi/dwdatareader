@@ -10,12 +10,11 @@ dwdatareader
    :target: https://ci.appveyor.com/project/costerwi/dwdatareader/branch/master
 
 DEWESoft produces hardware and software for test measurement, data aquisition, 
-and storage. Data files are stored with the extension .d7d in a proprietary
-format. DEWESoft provides a free Windows application to work with the data
-and a free shared library for developers on Windows and Linux.
+and storage. Data files are stored with the extension .d7d or .dxd in a proprietary
+format. DEWESoft provides a free Windows application (DewesoftX) to work with the data
+and a free shared library for developers.
 
-This is a Python module to interact with the DEWESoft DWDataReaderLib shared library
-available from https://download.dewesoft.com/list/developers.
+This is a Python module to interact with the DEWESoft DWDataReaderLib shared library, which can be downloaded from https://dewesoft.com/download/developer-downloads.
 
 Installation
 ------------
