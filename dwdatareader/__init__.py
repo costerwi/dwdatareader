@@ -27,7 +27,7 @@ __all__ = ['get_version', 'open_file']
 __version__ = '1.0.0'
 
 encoding = 'utf-8'  # default encoding
-DLL: ctypes.CDLL | ctypes.WinDLL
+DLL: getattr(ctypes, "WinDLL", ctypes.CDLL)
 
 class DWArrayInfoStruct(ctypes.Structure):
     """Represents information about an axis on and array channel."""
@@ -84,7 +84,6 @@ class DWArrayInfo(DWArrayInfoStruct):
         return f"DWArrayInfo index={self.index} name='{self.name}' unit='{self.unit}' size={self.size}"
 
 class DWBinarySample(ctypes.Structure):
-    """Binary data structure."""
     _pack_ = 1
     _fields_ = [
         ("position", ctypes.c_longlong),
