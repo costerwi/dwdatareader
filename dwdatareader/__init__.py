@@ -540,11 +540,13 @@ class DWFile(Mapping):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
-    def dataframe(self, channels: List[DWChannel] = None) -> pd.DataFrame:
+    def dataframe(self, channels: List = None) -> pd.DataFrame:
         """Return dataframe of selected channels"""
         if channels is None:
             # Return dataframe of all channels by default
             channels = self.channels
+        if type(channels[0]) is str:
+            channels = [self[ch_name] for ch_name in channels]
 
         channel_dfs = [ch.dataframe() for ch in channels]
         df = pd.concat(channel_dfs, axis=1, sort=True, copy=False)
