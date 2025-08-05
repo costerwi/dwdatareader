@@ -477,7 +477,7 @@ class DWFile(dict):
             status = DLL.DWIGetBinChannelList(self.reader_handle, bin_channel_structs)
             check_lib_status(status)
 
-            self.binary_channels = [DWChannel(ch, self.reader_handle) for ch in bin_channel_structs]
+            self.update([ch.name, DWChannel(ch, self.reader_handle)] for ch in bin_channel_structs)
 
         except RuntimeError as e:
             print(e)
