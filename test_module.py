@@ -189,7 +189,7 @@ class TestDW(unittest.TestCase):
         """Read all channel data as a single DataFrame."""
         with dw.open_file(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
-            channels = [channel for channel in d7d if not channel.channel_index.startswith('CAN')]
+            channels = [channel for channel in d7d.values() if not channel.channel_index.startswith('CAN')]
             self.assertEqual((11385, 8), d7d.dataframe(channels).shape)
 
     def test_encoding_utf8(self):
