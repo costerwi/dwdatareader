@@ -429,8 +429,6 @@ class DWFile(dict):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
         self.info = None
-        self.channels = None
-        self.binary_channels = None
 
         global DLL
         DLL = load_library()
