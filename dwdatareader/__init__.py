@@ -423,7 +423,7 @@ class DWEvent(ctypes.Structure):
     def __str__(self):
         return f"{self.event_type} {self.time_stamp} {self.event_text}"
 
-class DWFile(Mapping):
+class DWFile(dict):
     """Data file type mapping channel names their metadata"""
     def __init__(self, source = None):
         self.name = ''      # Name of the open file
