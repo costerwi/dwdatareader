@@ -56,7 +56,6 @@ class TestDW(unittest.TestCase):
 
     def test_filelike(self):
         """Test module access and usage of filelike objects."""
-
         with open(self.d7dname, 'rb') as f:
             self.assertFalse(f.closed, 'file did not open')
 
