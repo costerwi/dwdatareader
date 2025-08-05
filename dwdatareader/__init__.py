@@ -558,7 +558,7 @@ class DWFile(dict):
                 DLL.DWIDestroyReader(self.reader_handle)
                 self.reader_handle = None
             self.closed = True
-            self.channels = (DWChannel * 0)()  # Delete channel metadata
+            self.clear()  # Delete channel metadata
 
     def __len__(self):
         return len(self.channels)
