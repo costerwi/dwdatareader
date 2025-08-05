@@ -541,11 +541,9 @@ class DWFile(dict):
         """Return dataframe of selected channels"""
         if channels is None:
             # Return dataframe of all channels by default
-            channels = self.channels
-        if type(channels[0]) is str:
-            channels = [self[ch_name] for ch_name in channels]
+            channels = [ch.name for ch in self.values()]
 
-        channel_dfs = [ch.dataframe() for ch in channels]
+        channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
         df = pd.concat(channel_dfs, axis=1, sort=True, copy=False)
         return df
 
