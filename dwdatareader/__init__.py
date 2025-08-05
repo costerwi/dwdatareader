@@ -466,7 +466,7 @@ class DWFile(dict):
             status = DLL.DWIGetChannelList(self.reader_handle, channel_structs)
             check_lib_status(status)
 
-            self.channels = [DWChannel(ch, self.reader_handle) for ch in channel_structs]
+            self.update([ch.name, DWChannel(ch, self.reader_handle)] for ch in channel_structs)
 
             # read binary channel metadata
             bin_ch_count = ctypes.c_longlong()
