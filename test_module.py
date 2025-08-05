@@ -140,7 +140,7 @@ class TestDW(unittest.TestCase):
             self.assertFalse(d7d.closed, 'd7d did not open')
             # Following did not fail prior to DWDataReader v4.2.0.31
             # Now all channels whose channel_index begins with CAN will fail with "Feature or operation not supported on CAN channel"
-            # scaled = d7d['ENG_RPM'].scaled()
+            scaled = d7d['ENG_RPM'].scaled()
 
     def test_channel_index(self):
         """Channel type"""
