@@ -27,7 +27,7 @@ class TestDW(unittest.TestCase):
 
         # The d7d should be closed outside the above context
         self.assertTrue(d7d.closed, 'd7d did not close')
-        with self.assertRaises(IndexError,
+        with self.assertRaises(ValueError,
                 msg="accessing channel data"):
             ch.series() # ScaledSamplesCount returns -1
         with self.assertRaises(KeyError,
