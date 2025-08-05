@@ -18,7 +18,7 @@ class TestDW(unittest.TestCase):
         self.d7dname = os.path.join(os.path.dirname(__file__),
                 "Example_Drive01.d7d")
 
-    @unittest.expectedFailure
+    # @unittest.expectedFailure
     def test_context(self):
         """Check that the d7d is open and closed according to context."""
         with dw.open_file(self.d7dname) as d7d:
