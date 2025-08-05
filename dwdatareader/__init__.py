@@ -559,25 +559,6 @@ class DWFile(dict):
             self.closed = True
             self.clear()  # Delete channel metadata
 
-    def __len__(self):
-        return len(self.channels)
-
-    def __getitem__(self, key):
-        if type(key) is DWChannel:
-            for ch in self.channels:  # brute force lookup
-                if ch.index == key.index or ch.name == key.name:
-                    return ch
-        elif type(key) is str:
-            for ch in self.channels:  # brute force lookup
-                if ch.index == key or ch.name == key:
-                    return ch
-        else:
-            raise KeyError(key)
-
-    def __iter__(self):
-        for ch in self.channels:
-            yield ch
-
     def __str__(self):
         return self.name
 
