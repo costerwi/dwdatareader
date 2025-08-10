@@ -402,7 +402,7 @@ class DWEvent(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
         ("_event_type", ctypes.c_int),
-        ("time_stamp", ctypes.c_double), # timestamp in seconds relative to start_measure_time
+        ("time_stamp", ctypes.c_double),  # timestamp in seconds relative to start_measure_time
         ("_event_text", ctypes.c_char * 200)
     ]
 
@@ -537,14 +537,19 @@ class DWFile(dict):
         count = ctypes.c_longlong()
         status = DLL.DWIGetEventListCount(self.reader_handle, ctypes.byref(count))
         check_lib_status(status)
+
+        time_stamp = np.empty(count.value, dtype=np.double)
+        event_type = np.empty(count.value, dtype=np.longlong)
+        event_text = np.empty(count.value, dtype=object)
+
         if count.value:
-            events_ = (DWEvent * count.value)()
-            status = DLL.DWIGetEventList(self.reader_handle, events_)
+            events = (DWEvent * count.value)()
+            status = DLL.DWIGetEventList(self.reader_handle, events)
             check_lib_status(status)
-            for e in events_:
-                time_stamp.append(e.time_stamp)
-                event_type.append(e.event_type)
-                event_text.append(e.event_text)
+            for i, e in enumerate(events):
+                time_stamp[i] = e.time_stamp
+                event_type[i] = e.event_type
+                event_text[i] = str(e.event_text)
         return pd.DataFrame(
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
