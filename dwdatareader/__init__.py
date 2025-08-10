@@ -408,16 +408,31 @@ class DWEvent(ctypes.Structure):
 
     @property
     def event_type(self):
-        return DWEvent(self._event_type)
+        return DWEventType(self._event_type)
 
     @property
     def event_text(self):
         """Readable description of the event"""
         return decode_bytes(self._event_text)
 
-
     def __str__(self):
         return f"{self.event_type} {self.time_stamp} {self.event_text}"
+
+class DWEventType(IntEnum):
+    """Specifies the type of event."""
+    etStart = 1
+    etStop = 2
+    etTrigger = 3
+    etVStart = 11
+    etVStop = 12
+    etKeyboard = 20
+    etNotice = 21
+    etVoice = 22
+    etPicture = 23
+    etModule = 24
+    etAlarm = 25
+    etCursorInfo = 26
+    etAlarmLevel = 27
 
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""
