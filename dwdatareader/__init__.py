@@ -304,7 +304,6 @@ class DWChannel(DWChannelStruct):
                     columns.extend(array_info.columns)
                 data = data.reshape(self.number_of_samples, self.array_size)
 
-            time, ix = np.unique(time, return_index=True)  # unique times required for reindexing
             df = pd.DataFrame(
                 data=data,
                 index=time,
