@@ -531,9 +531,6 @@ class DWFile(dict):
 
     def events(self):
         """Load and return timeseries of file events"""
-        time_stamp = []
-        event_type = []
-        event_text = []
         count = ctypes.c_longlong()
         status = DLL.DWIGetEventListCount(self.reader_handle, ctypes.byref(count))
         check_lib_status(status)
