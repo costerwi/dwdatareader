@@ -302,10 +302,11 @@ class DWChannel(DWChannelStruct):
             else:  # Channel has multiple axes
                 for array_info in self.array_info:
                     columns.extend(array_info.columns)
+                data = data.reshape(self.number_of_samples, self.array_size)
 
             time, ix = np.unique(time, return_index=True)  # unique times required for reindexing
             df = pd.DataFrame(
-                data=data.reshape(self.number_of_samples, self.array_size)[ix,:],
+                data=data,
                 index=time,
                 columns=columns)
 
