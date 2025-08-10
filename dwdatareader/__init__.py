@@ -271,15 +271,15 @@ class DWChannel(DWChannelStruct):
             assert self.array_size == 1
 
             timestamps = (ctypes.c_double * sample_cnt)()
-            data = (DWBinarySample * sample_cnt)()
-            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, data,
+            bin_samples = (DWBinarySample * sample_cnt)()
+            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, bin_samples,
                                              timestamps)
             check_lib_status(status)
 
             bin_buf_size = 1024
-            parsed_data = []
+            data = []
             for i in range(sample_cnt):
-                bin_rec = data[i]
+                bin_rec = bin_samples[i]
                 bin_buf = create_string_buffer(bin_buf_size)
                 bin_buf_pos = ctypes.c_longlong(0)
                 status = DLL.DWIGetBinData(
@@ -288,14 +288,11 @@ class DWChannel(DWChannelStruct):
                     ctypes.byref(bin_buf_pos), bin_buf_size
                 )
                 check_lib_status(status)
-                # Append timestamp and decoded binary data
-                parsed_data.append({
-                    "Timestamp": timestamps[i],
-                    "Value": decode_bytes(bin_buf.value)
-                })
+
+                data.append(decode_bytes(bin_buf.value))
 
             # Return as a Pandas DataFrame
-            return pd.DataFrame(parsed_data)
+            return pd.DataFrame({self.name: data}, index=np.array(timestamps))
         else:
             time, data = self.scaled()
 
