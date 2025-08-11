@@ -148,9 +148,6 @@ class DWChannelType(IntEnum):
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
-        # super().__init__(*args, **kw)
-        # ctypes.memmove(ctypes.addressof(self), ctypes.addressof(channel_struct), ctypes.sizeof(channel_struct))
-        # self.reader_handle = reader_handle
         super().__init__(*args, **kw)
 
         # Create a new instance by copying the buffer memory
