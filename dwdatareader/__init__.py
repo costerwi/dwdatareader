@@ -559,10 +559,11 @@ class DWFile(dict):
 
         channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
         df = channel_dfs[0]
-        for ch_df in channel_dfs:
-            df = pd.merge(df, ch_df, left_on=df.index, right_on=ch_df.index, how='outer')
-            df.index = df['key_0'].values
-            df = df.drop(columns=['key_0'])
+        if len(channel_dfs) > 1:
+            for ch_df in channel_dfs[1:]:
+                df = pd.merge(df, ch_df, left_on=df.index, right_on=ch_df.index, how='outer')
+                df.index = df['key_0'].values
+                df = df.drop(columns=['key_0'])
         return df
 
     def close(self):
