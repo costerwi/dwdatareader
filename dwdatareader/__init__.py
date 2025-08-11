@@ -433,7 +433,7 @@ class DWEventType(IntEnum):
 
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""
-    def __init__(self, source = None):
+    def __init__(self, source=None):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
         self.info = None
