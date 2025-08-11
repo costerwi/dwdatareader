@@ -555,10 +555,14 @@ class DWFile(dict):
         """Return dataframe of selected channels"""
         if channels is None:
             # Return dataframe of all channels by default
-            channels = [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+            channels = [ch.name for ch in self.values()]# if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
 
         channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
-        df = pd.concat(channel_dfs, axis=1, sort=True, copy=False)
+        df = channel_dfs[0]
+        for ch_df in channel_dfs:
+            df = pd.merge(df, ch_df, left_on=df.index, right_on=ch_df.index, how='outer')
+            df.index = df['key_0'].values
+            df = df.drop(columns=['key_0'])
         return df
 
     def close(self):
