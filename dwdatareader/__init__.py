@@ -245,6 +245,9 @@ class DWChannel(DWChannelStruct):
     def __str__(self):
         return f"{self.name} ({self.unit}) {self.description}"
 
+    def __repr__(self):
+        return self.__str__()
+
     def scaled(self, array_index=0):
         """Load and return full speed data"""
         if not 0 <= array_index < self.array_size:
