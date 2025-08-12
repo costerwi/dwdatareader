@@ -493,6 +493,14 @@ class DWFile(dict):
             raise
 
     @property
+    def sync_channels(self):
+        return [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+
+    @property
+    def async_channels(self):
+        return [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_ASYNC]
+
+    @property
     def header(self):
         """Read file header section"""
         header = dict()
