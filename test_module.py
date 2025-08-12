@@ -192,6 +192,20 @@ class TestDW(unittest.TestCase):
             channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
             self.assertEqual((11385, 8), d7d.dataframe(channels).shape)
 
+    def test_sync_dataframe(self):
+        """Read all channel data as a single DataFrame."""
+        with dw.open_file(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
+            self.assertEqual((9580, 3), d7d.sync_dataframe(channels).shape)
+
+    def test_async_dataframe(self):
+        """Read all channel data as a single DataFrame."""
+        with dw.open_file(self.d7dname) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
+            self.assertEqual((1988, 5), d7d.async_dataframe(channels).shape)
+
     def test_encoding_utf8(self):
         """ Check that encoding is set correcly """
         dw.encoding = 'utf-8'
