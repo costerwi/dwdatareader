@@ -141,10 +141,16 @@ class DWChannelStruct(ctypes.Structure):
         return DWDataType(self._data_type)
 
 class DWChannelType(IntEnum):
-    """Specifies the type of channel."""
-    DW_CH_TYPE_SYNC = 0
-    DW_CH_TYPE_ASYNC = 1
-    DW_CH_TYPE_SV = 2
+    """
+    Represents a channel type.
+
+    The DWChannelType enumeration provides constants to distinguish between
+    different types of channels, primarily used to categorize
+    behavior in terms of synchronization, value handling or other attributes.
+    """
+    DW_CH_TYPE_SYNC = 0   # synchronous channel
+    DW_CH_TYPE_ASYNC = 1  # asynchronous channel
+    DW_CH_TYPE_SV = 2     # single value channel
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
