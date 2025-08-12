@@ -552,7 +552,7 @@ class DWFile(dict):
         """Return dataframe of selected channels"""
         if channels is None:
             # Return dataframe of all channels by default
-            channels = [ch.name for ch in self.values()]# if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+            channels = [ch.name for ch in self.values()]
 
         channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
         df = channel_dfs[0]
@@ -562,6 +562,24 @@ class DWFile(dict):
                 df.index = df['key_0'].values
                 df = df.drop(columns=['key_0'])
         return df
+
+    def sync_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+        if channels is None:
+            # Return dataframe of all channels by default
+            channels = [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+        else:
+            channels = [ch for ch in channels if self[ch].channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+        return self.dataframe(channels)
+
+    def async_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+        if channels is None:
+            # Return dataframe of all channels by default
+            channels = [ch.name for ch in self.values()
+                        if ch.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
+                        and ch.name not in ignore_channels]
+        else:
+            channels = [ch for ch in channels if self[ch].channel_type == DWChannelType.DW_CH_TYPE_ASYNC]
+        return self.dataframe(channels)
 
     def close(self):
         """Close the d7d file and delete it if temporary"""
