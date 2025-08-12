@@ -559,11 +559,9 @@ class DWFile(dict):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
-    def dataframe(self, channels: List = None) -> pd.DataFrame:
-        """Return dataframe of selected channels"""
-        if channels is None:
-            # Return dataframe of all channels by default
-            channels = [ch.name for ch in self.values()]
+    def _build_dataframe(self, channels: List = None) -> pd.DataFrame:
+        if channels is None or len(channels) == 0:
+            return pd.DataFrame()
 
         channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
         df = channel_dfs[0]
@@ -574,23 +572,34 @@ class DWFile(dict):
                 df = df.drop(columns=['key_0'])
         return df
 
-    def sync_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
-        if channels is None:
-            # Return dataframe of all channels by default
-            channels = [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
-        else:
-            channels = [ch for ch in channels if self[ch].channel_type == DWChannelType.DW_CH_TYPE_SYNC]
-        return self.dataframe(channels)
+    def _assemble_channels(self, channels: List = None, ignore_channels: List = None, ch_type: DWChannelType = None) -> List:
+        if ignore_channels is None:
+            ignore_channels = []
 
-    def async_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
         if channels is None:
             # Return dataframe of all channels by default
             channels = [ch.name for ch in self.values()
-                        if ch.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
-                        and ch.name not in ignore_channels]
+                        if ch.name not in ignore_channels]
         else:
-            channels = [ch for ch in channels if self[ch].channel_type == DWChannelType.DW_CH_TYPE_ASYNC]
-        return self.dataframe(channels)
+            channels = [ch for ch in channels
+                        if ch not in ignore_channels]
+
+        if ch_type is not None:
+            channels = [ch for ch in channels if self[ch].channel_type == ch_type]
+
+        return channels
+
+    def dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+        channels = self._assemble_channels(channels, ignore_channels)
+        return self._build_dataframe(channels)
+
+    def sync_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+        channels = self._assemble_channels(channels, ignore_channels, DWChannelType.DW_CH_TYPE_SYNC)
+        return self._build_dataframe(channels)
+
+    def async_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+        channels = self._assemble_channels(channels, ignore_channels, DWChannelType.DW_CH_TYPE_ASYNC)
+        return self._build_dataframe(channels)
 
     def close(self):
         """Close the d7d file and delete it if temporary"""
