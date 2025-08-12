@@ -117,7 +117,7 @@ class DWChannelStruct(ctypes.Structure):
         ("_description", ctypes.c_char * 200),
         ("color", ctypes.c_uint),
         ("array_size", ctypes.c_int),
-        ("data_type", ctypes.c_int)  # Using DWDataType enum
+        ("_data_type", ctypes.c_int)  # Using DWDataType enum
     ]
 
     @property
@@ -169,7 +169,6 @@ class DWChannel(DWChannelStruct):
 
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
-        # count = ctypes.c_longlong()
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index,
                                       ctypes.c_int(chan_prop),
