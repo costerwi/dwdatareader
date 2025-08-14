@@ -408,8 +408,14 @@ class DWChannel(DWChannelStruct):
 
         return time, data
 
-    def dataframe(self):
-        """Load and return full speed channel data as Pandas Dataframe"""
+    def dataframe(self) -> pd.DataFrame:
+        """
+        Retrieves scaled channel values with their corresponding timestamps in a Pandas DataFrame.
+
+        Returns:
+            df (pandas.DataFrame): A Pandas DataFrame containing scaled data with
+                                    the timestamps as index
+        """
         if self.data_type == DWDataType.dtBinary:
             sample_cnt = self.number_of_samples
 
