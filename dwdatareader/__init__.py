@@ -230,7 +230,45 @@ class DWChannelType(IntEnum):
     DW_CH_TYPE_SV = 2
 
 class DWChannel(DWChannelStruct):
-    def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
+    """
+    Represents a data channel, providing methods to access its data.
+
+    This class inherits from DWChannelStruct to provide access to its properties
+    and data. It interacts with the DLL and provides utility methods to handle
+    channel data of various data types.
+
+    Attributes:
+        reader_handle: pointer to the DLL reader instance
+
+    Methods:
+        number_of_samples: number of samples in the channel
+        channel_type: channel type, refering to DWChannelType
+        channel_index: channel index
+        channel_xml: XML of the channel configuration
+        long_name: long name of the channel
+        scale: scale factor applied to the channel data
+        offset: offset applied to the channel data
+        array_info: DWArrayInfo axes associated with the channel
+        scaled: full speed data and timestamps as numpy arrays
+        dataframe: full speed data as a Pandas DataFrame
+        series: channel data as a Pandas Series
+        series_generator: channel data in chunked Pandas Series format
+        reduced: reduced (averaged) data as a Pandas DataFrame
+    """
+    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes._Pointer, *args: Any, **kw: Any) -> None:
+        """
+        Initializes an instance of the class and copies the contents of the channel structure.
+
+        Attributes:
+            reader_handle: pointer to the DLL reader instance
+
+        Arguments:
+            channel_struct (DWChannelStruct): channel structure to initialize the instance with
+            reader_handle (ctypes._Pointer): pointer reader handle
+            *args (Any): additional positional arguments for the parent class (DWChannelStruct) initialization
+            **kw (Any): additional keyword arguments for the parent class (DWChannelStruct) initialization
+
+        """
         super().__init__(*args, **kw)
 
         # Create a new instance by copying the buffer memory
