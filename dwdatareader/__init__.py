@@ -166,7 +166,21 @@ class DWChannelProps(IntEnum):
     DW_CH_LONGNAME_LEN = 14
 
 class DWChannelStruct(ctypes.Structure):
-    """Structure represents a Dewesoft channel."""
+    """
+    Represents the structure for a channel.
+
+    This class is a ctypes Structure to store a channel's metadata. The
+    structure is compliant with relevant DLL function calls.
+
+    Properties:
+        index: unique index of the channel
+        name: channel name
+        unit: measurement unit
+        description: channel description
+        color: display color
+        array_size: array size (dimension)
+        data_type: type of data stored in the channel, refers to DWDataType
+    """
     _pack_ = 1
     _fields_ = [
         ("index", ctypes.c_int),
