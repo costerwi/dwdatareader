@@ -125,7 +125,30 @@ class DWBinarySample(ctypes.Structure):
     ]
 
 class DWChannelProps(IntEnum):
-    """Specifies the properties that can be retrieved for a channel."""
+    """
+    Defines an enumeration for channel properties.
+
+    This class is an enumeration that specifies various properties
+    pertaining to channels. The keys represent the property names
+    and values are associated integers.
+
+    Properties:
+        DW_DATA_TYPE (int): data type of the channel
+        DW_DATA_TYPE_LEN_BYTES (int): length of the data type in bytes
+        DW_CH_INDEX (int): channel index
+        DW_CH_INDEX_LEN (int): length of the channel index
+        DW_CH_TYPE (int): channel type
+        DW_CH_SCALE (int): scale factor of the channel values
+        DW_CH_OFFSET (int): offset of the channel values
+        DW_CH_XML (int): XML structure of channel
+        DW_CH_XML_LEN (int): length of the channel XML data
+        DW_CH_XMLPROPS (int): XML structure properties
+        DW_CH_XMLPROPS_LEN (int): Length of XML structure properties
+        DW_CH_CUSTOMPROPS (int): XML structure custom properties
+        DW_CH_CUSTOMPROPS_COUNT (int): length of XML structure custom properties
+        DW_CH_LONGNAME (int): long name of the channel
+        DW_CH_LONGNAME_LEN (int): length of the long name
+    """
     DW_DATA_TYPE = 0
     DW_DATA_TYPE_LEN_BYTES = 1
     DW_CH_INDEX = 2
