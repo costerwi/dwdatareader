@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, List
 from enum import IntEnum
 from xml.etree import ElementTree
+from typing import Tuple
 
 __all__ = ['get_version', 'open_file']
 __version__ = '1.0.0'
