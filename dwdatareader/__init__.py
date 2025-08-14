@@ -278,16 +278,6 @@ class DWChannel(DWChannelStruct):
 
         self.reader_handle = reader_handle
 
-    @property
-    def number_of_samples(self):
-        count = ctypes.c_longlong()
-        if self.data_type == DWDataType.dtBinary:
-            status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
-        else:
-            status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
-        check_lib_status(status)
-        return count.value
-
     def _chan_prop_int(self, chan_prop):
         prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
         status = DLL.DWIGetChannelProps(self.reader_handle,
@@ -332,12 +322,22 @@ class DWChannel(DWChannelStruct):
         count (str): string for the channel property
         """
         len_str = self._chan_prop_int(chan_prop_len)
-        p_buff = ctypes.create_string_buffer(len_str.value)
+        str_buff = ctypes.create_string_buffer(len_str.value)
         status = DLL.DWIGetChannelProps(self.reader_handle,
-                                      self.index, ctypes.c_int(chan_prop), p_buff,
+                                      self.index, ctypes.c_int(chan_prop), str_buff,
                                       ctypes.byref(len_str))
         check_lib_status(status)
-        return decode_bytes(p_buff.value)
+        return decode_bytes(str_buff.value)
+
+    @property
+    def number_of_samples(self):
+        count = ctypes.c_longlong()
+        if self.data_type == DWDataType.dtBinary:
+            status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+        else:
+            status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+        check_lib_status(status)
+        return count.value
 
     @property
     def channel_type(self):
