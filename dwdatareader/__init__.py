@@ -526,7 +526,12 @@ class DWChannel(DWChannelStruct):
                 columns=['ave', 'min', 'max', 'rms'])
 
 class DWComplex(ctypes.Structure):
-    """Represents a complex number with real and imaginary components."""
+    """
+    Represents a complex number values with real and imaginary components.
+
+    This class defines a structure to hold a complex number with double-precision
+    floating-point values for both the real and imaginary parts.
+    """
     _pack_ = 1
     _fields_ = [
         ("re", ctypes.c_double),
