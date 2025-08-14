@@ -464,7 +464,13 @@ class DWChannel(DWChannelStruct):
             return df
 
     def series(self):
-        """Load and return timeseries for a channel"""
+        """
+        Retrieves scaled channel values with their corresponding timestamps in a Pandas Series.
+
+        Returns:
+            df (pandas.Series): A Pandas Series containing scaled data with
+                                    the timestamps as index
+        """
         time, data = self.scaled()
         return pd.Series(data, index=time)
 
