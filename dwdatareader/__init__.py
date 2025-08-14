@@ -216,13 +216,18 @@ class DWChannelType(IntEnum):
     """
     Represents a channel type.
 
-    The DWChannelType enumeration provides constants to distinguish between
-    different types of channels, primarily used to categorize
-    behavior in terms of synchronization, value handling or other attributes.
+    The DWChannelType enumeration translates integers to different
+    types of channels, primarily used to categorize behavior in terms
+    of synchronization, value handling or other attributes.
+
+    Properties:
+        DW_CH_TYPE_SYNC: synchronous channel
+        DW_CH_TYPE_ASYNC: asynchronous channel
+        DW_CH_TYPE_SV: single value channel
     """
-    DW_CH_TYPE_SYNC = 0   # synchronous channel
-    DW_CH_TYPE_ASYNC = 1  # asynchronous channel
-    DW_CH_TYPE_SV = 2     # single value channel
+    DW_CH_TYPE_SYNC = 0
+    DW_CH_TYPE_ASYNC = 1
+    DW_CH_TYPE_SV = 2
 
 class DWChannel(DWChannelStruct):
     def __init__(self, channel_struct: DWChannelStruct, reader_handle, *args: Any, **kw: Any) -> None:
