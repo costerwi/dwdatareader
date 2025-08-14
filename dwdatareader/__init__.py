@@ -390,10 +390,14 @@ class DWChannel(DWChannelStruct):
     def __repr__(self):
         return self.__str__()
 
-    def scaled(self, array_index=0):
-        """Load and return full speed data"""
-        if not 0 <= array_index < self.array_size:
-            raise IndexError('array index is out of range')
+    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Retrieves scaled channel values with their corresponding timestamps.
+
+        Returns:
+            time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
+                first element and the scaled data array as the second element.
+        """
         count = self.number_of_samples
         data = np.zeros(count*self.array_size, dtype=np.double)
         time = np.zeros(count, dtype=np.double)
