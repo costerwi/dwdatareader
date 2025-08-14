@@ -61,6 +61,17 @@ class DWArrayInfoStruct(ctypes.Structure):
         return decode_bytes(self._unit)
 
 class DWArrayInfo(DWArrayInfoStruct):
+    """
+    Represents information about an array.
+
+    This class inherits from DWArrayInfoStruct and encapsulates information of
+    a data array. Instances of this class provide mechanisms to retrieve relevant
+    array metadata.
+
+    Attributes:
+        channel: Reference to the channel associated with this array. This is
+                 used to access additional data or metadata for the array.
+    """
     def __init__(self, array_struct: DWArrayInfoStruct, channel = None, *args: Any, **kw: Any):
         super().__init__(*args, **kw)
         ctypes.memmove(ctypes.addressof(self), ctypes.addressof(array_struct), ctypes.sizeof(array_struct))
