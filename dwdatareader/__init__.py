@@ -189,7 +189,7 @@ class DWChannelStruct(ctypes.Structure):
         ("_description", ctypes.c_char * 200),
         ("color", ctypes.c_uint),
         ("array_size", ctypes.c_int),
-        ("_data_type", ctypes.c_int)  # Using DWDataType enum
+        ("_data_type", ctypes.c_int)
     ]
 
     @property
