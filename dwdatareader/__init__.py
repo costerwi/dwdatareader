@@ -106,6 +106,18 @@ class DWArrayInfo(DWArrayInfoStruct):
         return f"DWArrayInfo index={self.index} name='{self.name}' unit='{self.unit}' size={self.size}"
 
 class DWBinarySample(ctypes.Structure):
+    """
+    Represents a binary sample.
+
+    This class is a ctypes Structure to define binary samples. The
+    structure is compliant with relevant DLL function calls.
+
+    Properties:
+        position (int): position of 4.
+        name (char): name of the array.
+        unit (char: The unit of measurement used by the array.
+        size (int): The size of the array.
+    """
     _pack_ = 1
     _fields_ = [
         ("position", ctypes.c_longlong),
