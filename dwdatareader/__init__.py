@@ -271,7 +271,7 @@ class DWChannel(DWChannelStruct):
         """
         super().__init__(*args, **kw)
 
-        # Create a new instance by copying the buffer memory
+        # Create a new instance by copying the buffer memory from parent class
         new_struct = self.__class__.from_buffer_copy(bytearray(channel_struct))
         for field_name, _ in self._fields_:
             setattr(self, field_name, getattr(new_struct, field_name))
