@@ -289,24 +289,34 @@ class DWChannel(DWChannelStruct):
         return count.value
 
     def _chan_prop_int(self, chan_prop):
-        count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
+        prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index,
                                       ctypes.c_int(chan_prop),
-                                      ctypes.byref(count),
-                                      ctypes.byref(count))
+                                      ctypes.byref(prop_int),
+                                      ctypes.byref(prop_int))
         check_lib_status(status)
-        return count
+        return prop_int
 
-    def _chan_prop_double(self, chan_prop):
+    def _chan_prop_double(self, chan_prop: int) -> ctypes.c_double:
+        """
+        Retrieves the floating point value for a specific channel property.
+        This method interacts with the DLL to fetch the floating point value
+        associated with a given channel property for the associated reader.
+
+        Parameters:
+        chan_prop (int): identifier for the channel property
+
+        Returns:
+        count (ctypes.c_double): floating point value for the channel property
+        """
         count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_double))
-        # count = ctypes.c_longlong()
-        p_buff = ctypes.c_double(0)
+        prop_double = ctypes.c_double(0)
         status = DLL.DWIGetChannelProps(self.reader_handle,
-                                      self.index, ctypes.c_int(chan_prop), ctypes.byref(p_buff),
+                                      self.index, ctypes.c_int(chan_prop), ctypes.byref(prop_double),
                                       ctypes.byref(count))
         check_lib_status(status)
-        return p_buff
+        return prop_double
 
     def _chan_prop_str(self, chan_prop, chan_prop_len):
         """
