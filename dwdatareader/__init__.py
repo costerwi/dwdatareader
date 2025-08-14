@@ -87,7 +87,7 @@ class DWArrayInfo(DWArrayInfoStruct):
 
     @property
     def columns(self):
-        """Idenfitying names for columns of a multidimensional array"""
+        """Extracting idenfitying names from array XML for columns of a multidimensional array"""
         root = ElementTree.fromstring(self.channel.channel_xml)
 
         element = root.find('./ArrayInfo/Axis/StringValues').text
