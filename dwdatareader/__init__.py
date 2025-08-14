@@ -309,6 +309,18 @@ class DWChannel(DWChannelStruct):
         return p_buff
 
     def _chan_prop_str(self, chan_prop, chan_prop_len):
+        """
+        Retrieves the string for a specific channel property.
+
+        This method interacts with the DLL to fetch the string associated
+        with a given channel property for the associated reader and decodes it.
+
+        Parameters:
+        chan_prop (int): identifier for the channel property
+
+        Returns:
+        count (str): string for the channel property
+        """
         len_str = self._chan_prop_int(chan_prop_len)
         p_buff = ctypes.create_string_buffer(len_str.value)
         status = DLL.DWIGetChannelProps(self.reader_handle,
