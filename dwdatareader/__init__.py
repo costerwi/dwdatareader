@@ -30,7 +30,18 @@ encoding = 'utf-8'  # default encoding
 DLL: getattr(ctypes, "WinDLL", ctypes.CDLL)
 
 class DWArrayInfoStruct(ctypes.Structure):
-    """Represents information about an axis on and array channel."""
+    """
+    A structure for information of an array.
+
+    This class is a ctypes Structure to define metadata for an array. The
+    structure is compliant with relevant DLL function calls.
+
+    Properties:
+        index (int): index
+        name (char): name
+        unit (char: measurement unit
+        size (int): array size (number of dimensions)
+    """
     _pack_ = 1
     _fields_ = [
         ("index", ctypes.c_int),
