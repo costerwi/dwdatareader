@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Read module version from init file
-from dwdatareader.version import __version__
+from dwdatareader import __version__
 
 from distutils.core import setup
 setup(name='dwdatareader',
