@@ -804,14 +804,17 @@ class DWMeasurementInfo(ctypes.Structure):
     @property
     def start_store_time(self):
         """Return start_store_time in Python datetime format"""
-        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + timedelta(self._start_store_time)
+        return self.epoch + timedelta(self._start_store_time)
 
     @property
     def start_measure_time(self):
         """Return start_store_time in Python datetime format"""
+        return self.epoch + timedelta(self._start_measure_time)
+
+    @property
+    def epoch(self):
         epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch + timedelta(self._start_measure_time)
+        return epoch
 
 class DWStatus(IntEnum):
     """Status codes returned from library function calls"""
