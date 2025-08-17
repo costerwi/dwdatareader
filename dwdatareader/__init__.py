@@ -24,7 +24,7 @@ from xml.etree import ElementTree
 from typing import Tuple
 
 __all__ = ['get_version', 'open_file']
-__version__ = '1.0.0'
+
 
 encoding = 'utf-8'  # default encoding
 DLL: getattr(ctypes, "WinDLL", ctypes.CDLL)
