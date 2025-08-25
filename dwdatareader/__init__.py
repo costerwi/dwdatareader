@@ -640,8 +640,19 @@ class DWFile(dict):
             status = DLL.DWIGetChannelList(self.reader_handle, channel_structs)
             check_lib_status(status)
 
-            self.update([ch.name, DWChannel(ch, self.reader_handle)] for ch in channel_structs)
+            def unique_key(base: str) -> str:
+                "Generate a unique string key starting with given base"
+                key = base  # start with the base itself
+                suffix = 0
+                while key in self:
+                    suffix -= 1
+                    key = f'{base}{suffix}'
+                return key
 
+            for channel_struct in channel_structs:
+                channel = DWChannel(channel_struct, self.reader_handle)
+                self[unique_key(channel.long_name)] = channel
+ 
             # read binary channel metadata
             bin_ch_count = ctypes.c_longlong()
             status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
@@ -650,8 +661,10 @@ class DWFile(dict):
 
             status = DLL.DWIGetBinChannelList(self.reader_handle, bin_channel_structs)
             check_lib_status(status)
-
-            self.update([ch.name, DWChannel(ch, self.reader_handle)] for ch in bin_channel_structs)
+ 
+            for channel_struct in bin_channel_structs:
+                channel = DWChannel(channel_struct, self.reader_handle)
+                self[uniquekey(channel.long_name)] = channel
 
         except RuntimeError as e:
             print(e)
