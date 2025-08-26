@@ -278,6 +278,7 @@ class DWChannel(DWChannelStruct):
             setattr(self, field_name, getattr(new_struct, field_name))
 
         self.reader_handle = reader_handle
+        self.unique_key = self.long_name  # this can be overriden in DWFile
 
     def _chan_prop_int(self, chan_prop):
         prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
@@ -445,13 +446,13 @@ class DWChannel(DWChannelStruct):
                 data.append(decode_bytes(bin_buf.value))
 
             # Return as a Pandas DataFrame
-            return pd.DataFrame({self.name: data}, index=np.array(timestamps))
+            return pd.DataFrame({self.unique_key: data}, index=np.array(timestamps))
         else:
             time, data = self.scaled()
 
             columns = []
             if self.array_size == 1:
-                columns.append(self.name)
+                columns.append(self.unique_key)
             else:  # Channel has multiple axes
                 for array_info in self.array_info:
                     columns.extend(array_info.columns)
@@ -473,7 +474,7 @@ class DWChannel(DWChannelStruct):
                                     the timestamps as index
         """
         time, data = self.scaled()
-        return pd.Series(data, index=time)
+        return pd.Series(data, index=time, name=self.unique_key)
 
     def series_generator(self, chunk_size, array_index:int = 0):
         """Generator yielding channel data as chunks of a pandas series
@@ -499,7 +500,7 @@ class DWChannel(DWChannelStruct):
             yield pd.Series(
                     data = data.reshape(-1, self.array_size)[ix, array_index],
                     index = time,
-                    name = self.name)
+                    name = self.unique_key)
 
     def reduced(self):
         """Load reduced (averaged) data as Pandas DataFrame"""
@@ -639,8 +640,9 @@ class DWFile(dict):
 
             for channel_struct in channel_structs:
                 channel = DWChannel(channel_struct, self.reader_handle)
-                self[unique_key(channel.long_name)] = channel
- 
+                channel.unique_key = unique_key(channel.long_name)
+                self[channel.unique_key] = channel
+
             # read binary channel metadata
             bin_ch_count = ctypes.c_longlong()
             status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
@@ -652,7 +654,8 @@ class DWFile(dict):
  
             for channel_struct in bin_channel_structs:
                 channel = DWChannel(channel_struct, self.reader_handle)
-                self[unique_key(channel.long_name)] = channel
+                channel.unique_key = unique_key(channel.long_name)
+                self[channel.unique_key] = channel
 
         except RuntimeError as e:
             self.close()
@@ -741,8 +744,8 @@ class DWFile(dict):
 
         if channels is None:
             # Return dataframe of all channels by default
-            channels = [ch.name for ch in self.values()
-                        if ch.name not in ignore_channels]
+            channels = [ch.unique_key for ch in self.values()
+                        if ch.unique_key not in ignore_channels]
         else:
             channels = [ch for ch in channels
                         if ch not in ignore_channels]
