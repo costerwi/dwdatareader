@@ -14,14 +14,15 @@ with dw.open('myfile.d7d') as f:
 import ctypes
 import platform
 import atexit
-import numpy as np
-import pandas as pd
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, List
 from enum import IntEnum
 from xml.etree import ElementTree
 from typing import Tuple
+
+import numpy as np
+import pandas as pd
 
 __all__ = ['get_version', 'open_file']
 __version__ = '1.0.0'
