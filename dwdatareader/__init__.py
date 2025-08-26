@@ -660,11 +660,11 @@ class DWFile(dict):
 
     @property
     def sync_channels(self):
-        return [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
+        return [key for key, ch in self.items() if ch.channel_type == DWChannelType.DW_CH_TYPE_SYNC]
 
     @property
     def async_channels(self):
-        return [ch.name for ch in self.values() if ch.channel_type == DWChannelType.DW_CH_TYPE_ASYNC]
+        return [key for key, ch in self.items() if ch.channel_type == DWChannelType.DW_CH_TYPE_ASYNC]
 
     @property
     def header(self):
