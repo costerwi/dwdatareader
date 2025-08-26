@@ -897,17 +897,17 @@ def decode_bytes(byte_string):
         return byte_string.decode(encoding=encoding, errors='replace').rstrip('\x00')
     return byte_string
 
-def check_lib_status(status: DWStatus):
+def check_lib_status(status: int):
     """Check the status returned by the library functions."""
     if status == DWStatus.DWSTAT_OK:
         return
 
     err_msg_len = ctypes.c_int(1024)
     err_msg = create_string_buffer(err_msg_len.value)
-    err_status = ctypes.c_int(DWStatus.DWSTAT_OK)
+    err_status = ctypes.c_int(status)
 
     while DLL.DWGetLastStatus(ctypes.byref(err_status), err_msg,
                               ctypes.byref(err_msg_len)) == DWStatus.DWSTAT_ERROR_NO_MEMORY_ALLOC:
         err_msg = create_string_buffer(err_msg_len.value)
 
-    raise RuntimeError(f"Error {status}: {decode_bytes(err_msg.value)}")
+    raise RuntimeError(f"Error {err_status.value} ({DWStatus(err_status.value).name}): {decode_bytes(err_msg.value)}")
