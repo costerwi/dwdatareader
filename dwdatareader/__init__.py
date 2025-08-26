@@ -652,7 +652,7 @@ class DWFile(dict):
  
             for channel_struct in bin_channel_structs:
                 channel = DWChannel(channel_struct, self.reader_handle)
-                self[uniquekey(channel.long_name)] = channel
+                self[unique_key(channel.long_name)] = channel
 
         except RuntimeError as e:
             print(e)
