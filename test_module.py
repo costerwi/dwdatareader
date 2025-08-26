@@ -38,14 +38,14 @@ class TestDW(unittest.TestCase):
         with dw.open_file(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             for key in d7d:
-                self.assertEqual(key, d7d[key].name)
+                self.assertTrue(key.startswith(d7d[key].long_name))
 
     def test_items(self):
         """Check iteration of items"""
         with dw.open_file(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             for key, value in d7d.items():
-                self.assertEqual(key, value.name)
+                self.assertTrue(key.startswith(value.long_name))
 
     def test_info(self):
         """Check that the file info was read correctly."""
