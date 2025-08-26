@@ -526,19 +526,6 @@ class DWChannel(DWChannelStruct):
         return pd.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
 
-class DWComplex(ctypes.Structure):
-    """
-    Represents a complex number values with real and imaginary components.
-
-    This class defines a structure to hold a complex number with double-precision
-    floating-point values for both the real and imaginary parts.
-    """
-    _pack_ = 1
-    _fields_ = [
-        ("re", ctypes.c_double),
-        ("im", ctypes.c_double)
-    ]
-
 class DWDataType(IntEnum):
     """Specifies the channel data type."""
     dtByte = 0
