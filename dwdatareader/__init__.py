@@ -438,7 +438,7 @@ class DWChannel(DWChannelStruct):
                 bin_buf_pos = ctypes.c_longlong(0)
                 status = DLL.DWIGetBinData(
                     self.reader_handle, self.index,
-                    bin_rec, bin_buf,
+                    ctypes.byref(bin_rec), ctypes.byref(bin_buf),
                     ctypes.byref(bin_buf_pos), bin_buf_size
                 )
                 check_lib_status(status)
