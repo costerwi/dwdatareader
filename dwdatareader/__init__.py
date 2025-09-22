@@ -657,7 +657,7 @@ class DWFile(dict):
                 channel.unique_key = unique_key(channel.long_name)
                 self[channel.unique_key] = channel
 
-        except RuntimeError as e:
+        except RuntimeError:
             self.close()
             raise
 
