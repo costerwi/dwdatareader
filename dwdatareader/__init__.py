@@ -1,10 +1,10 @@
 """Python module that wraps Dewesoft DWDataReaderLib.dll for interactive use with Pyton
 
-@author: shelmore, costerwisch and Bojan023
+Homepage: https://github.com/costerwi/dwdatareader/
 
 Example usage:
 import dwdatareader as dw
-with dw.open('myfile.d7d') as f:
+with dw.open_file('myfile.d7d') as f:
     print(f.info)
     ch1 = f['chname1'].series()
     for ch in f.values():
