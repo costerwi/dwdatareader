@@ -5,6 +5,7 @@ with open('dwdatareader/__init__.py') as f:
     for line in f:
         if line.startswith('__version__'):
             exec(line)
+            break
 
 from distutils.core import setup
 setup(name='dwdatareader',
