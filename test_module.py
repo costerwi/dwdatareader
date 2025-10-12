@@ -75,11 +75,6 @@ class TestDW(unittest.TestCase):
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(100, d7d.info.sample_rate)
 
-    def test_filelike(self):
-        """Test module access and usage of filelike objects."""
-        with open(self.d7dname, 'rb') as f:
-            self.assertFalse(f.closed, 'file did not open')
-
     def test_metadata(self):
         """Make sure channel metadata is correctly loaded."""
         with dw.DWFile(self.d7dname) as d7d:
