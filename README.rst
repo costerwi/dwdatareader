@@ -33,7 +33,7 @@ You can work with a `live Binder example here <https://mybinder.org/v2/gh/coster
 .. code:: python
 
     import dwdatareader as dw
-    with dw.open_file('myfile.d7d') as f:
+    with dw.DWFile('myfile.d7d') as f:
         print(f.info)
         ch1 = f['chname1'].series()
         ch1.plot()

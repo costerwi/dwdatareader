@@ -20,7 +20,7 @@ class TestDW(unittest.TestCase):
 
     def test_context(self):
         """Check that the d7d is open and closed according to context."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(d7d.name, self.d7dname)
             ch = d7d['ENG_RPM']
@@ -36,21 +36,21 @@ class TestDW(unittest.TestCase):
 
     def test_keys(self):
         """Check iteration of channel names"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             for key in d7d:
                 self.assertTrue(key.startswith(d7d[key].long_name))
 
     def test_items(self):
         """Check iteration of items"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             for key, value in d7d.items():
                 self.assertTrue(key.startswith(value.long_name))
 
     def test_info(self):
         """Check that the file info was read correctly."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(100, d7d.info.sample_rate)
 
@@ -61,14 +61,14 @@ class TestDW(unittest.TestCase):
 
     def test_metadata(self):
         """Make sure channel metadata is correctly loaded."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(20, len(d7d))
             self.assertEqual('rpm', d7d['ENG_RPM'].unit)
 
     def test_header(self):
         """Make sure file headers are available."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             # Unfortunately, no headers in sample file
             self.assertDictEqual({}, d7d.header)
@@ -76,19 +76,19 @@ class TestDW(unittest.TestCase):
     def test_export_header(self):
         """Make sure header is exported to file local.xml"""
         file_name = "local.xml"
-        with dw.open_file(self.d7dname) as dwf:
+        with dw.DWFile(self.d7dname) as dwf:
             dwf.export_header(file_name)
         assert os.path.isfile("local.xml")
 
     def test_events(self):
         """Make sure events are readable."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(2, len(d7d.events()))
 
     def test_series(self):
         """Read a series and make sure its value matches expectation."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             s = d7d['GPSvel'].series()
             s5 = s[5.0:5.5] # time-based slice!
@@ -96,7 +96,7 @@ class TestDW(unittest.TestCase):
 
     def test_series_generator(self):
         """Read a series and make sure its value matches expectation."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['GPSvel']
             expected = channel.series()
@@ -106,7 +106,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_type(self):
         """Channel type"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.channel_type
@@ -115,7 +115,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_scale(self):
         """Channel Scale"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.scale
@@ -124,7 +124,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_offset(self):
         """Channel Offset"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.offset
@@ -135,7 +135,7 @@ class TestDW(unittest.TestCase):
     @unittest.expectedFailure
     def test_CAN_channel(self):
         """Read channel data with CAN in its channel_index"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             # Following did not fail prior to DWDataReader v4.2.0.31
             # Now all channels whose channel_index begins with CAN will fail with "Feature or operation not supported on CAN channel"
@@ -143,7 +143,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_index(self):
         """Channel type"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['GPSvel']
             actual = channel.channel_index
@@ -152,7 +152,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_xml(self):
         """Channel type"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             xml = channel.channel_xml
@@ -163,7 +163,7 @@ class TestDW(unittest.TestCase):
 
     def test_channel_longname(self):
         """Channel long name"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channel = d7d['ENG_RPM']
             actual = channel.long_name
@@ -172,7 +172,7 @@ class TestDW(unittest.TestCase):
 
     def test_reduced(self):
         """Read reduced channel data and check value."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             r = d7d['GPSvel'].reduced()
             r5 = r.ave.asof(5.0) # index into reduced list near time=5.0
@@ -180,28 +180,28 @@ class TestDW(unittest.TestCase):
 
     def test_channel_dataframe(self):
         """Read one channel as a DataFrame"""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             df = d7d['GPSvel'].dataframe()
             self.assertEqual(len(df.GPSvel), 9580)
 
     def test_all_dataframe(self):
         """Read all channel data as a single DataFrame."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
             self.assertEqual((11568, 8), d7d.dataframe(channels).shape)
 
     def test_sync_dataframe(self):
         """Read all channel data as a single DataFrame."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
             self.assertEqual((9580, 3), d7d.sync_dataframe(channels).shape)
 
     def test_async_dataframe(self):
         """Read all channel data as a single DataFrame."""
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             channels = [ch_name for ch_name, channel in d7d.items() if not channel.channel_index.startswith('CAN')]
             self.assertEqual((1988, 5), d7d.async_dataframe(channels).shape)
@@ -209,7 +209,7 @@ class TestDW(unittest.TestCase):
     def test_encoding_utf8(self):
         """ Check that encoding is set correcly """
         dw.encoding = 'utf-8'
-        with dw.open_file(self.d7dname) as d7d:
+        with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
 
     def test_encoding_utf32(self):
