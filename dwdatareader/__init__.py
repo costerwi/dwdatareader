@@ -4,7 +4,7 @@ Homepage: https://github.com/costerwi/dwdatareader/
 
 Example usage:
 import dwdatareader as dw
-with dw.open_file('myfile.d7d') as f:
+with dw.DWFile('myfile.d7d') as f:
     print(f.info)
     ch1 = f['chname1'].series()
     for ch in f.values():
