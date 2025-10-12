@@ -22,6 +22,7 @@ class TestDW(unittest.TestCase):
         """Check that the d7d is open and closed according to context."""
         with dw.open_file(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
+            self.assertEqual(d7d.name, self.d7dname)
             ch = d7d['ENG_RPM']
 
         # The d7d should be closed outside the above context

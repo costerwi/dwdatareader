@@ -614,6 +614,7 @@ class DWFile(dict):
             # DWIOpenDataFile outputs DWFileInfo struct, however DWFile is marked as deprecated
             status = DLL.DWIOpenDataFile(self.reader_handle, c_source, ctypes.byref(self.info))
             check_lib_status(status)
+            self.name = source
 
             # fill all DWMeasurementInfo fields not filled by DWIOpenDataFile
             status = DLL.DWIGetMeasurementInfo(self.reader_handle, ctypes.byref(self.info))
