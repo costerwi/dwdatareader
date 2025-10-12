@@ -23,8 +23,8 @@ from typing import Any, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 
-__all__ = ['get_version', 'open_file']
-__version__ = '1.0.0'
+__all__ = ['get_version', 'open_file', 'DWError', 'DWFile']
+__version__ = '1.1.0'
 
 encoding = 'utf-8'  # default encoding
 DLL: ctypes.CDLL
@@ -286,7 +286,7 @@ class DWChannel(DWChannelStruct):
                                       ctypes.c_int(chan_prop),
                                       ctypes.byref(prop_int),
                                       ctypes.byref(prop_int))
-        check_lib_status(status)
+        if status: raise DWError(status)
         return prop_int
 
     def _chan_prop_double(self, chan_prop: int) -> ctypes.c_double:
@@ -306,7 +306,7 @@ class DWChannel(DWChannelStruct):
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index, ctypes.c_int(chan_prop), ctypes.byref(prop_double),
                                       ctypes.byref(count))
-        check_lib_status(status)
+        if status: raise DWError(status)
         return prop_double
 
     def _chan_prop_str(self, chan_prop, chan_prop_len):
@@ -327,7 +327,7 @@ class DWChannel(DWChannelStruct):
         status = DLL.DWIGetChannelProps(self.reader_handle,
                                       self.index, ctypes.c_int(chan_prop), str_buff,
                                       ctypes.byref(len_str))
-        check_lib_status(status)
+        if status: raise DWError(status)
         return decode_bytes(str_buff.value)
 
     @property
@@ -337,7 +337,7 @@ class DWChannel(DWChannelStruct):
             status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
         else:
             status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
-        check_lib_status(status)
+        if status: raise DWError(status)
         return count.value
 
     @property
@@ -374,12 +374,12 @@ class DWChannel(DWChannelStruct):
             return []
         narray_infos = ctypes.c_longlong()
         status = DLL.DWIGetArrayInfoCount(self.reader_handle, self.index, ctypes.byref(narray_infos)) # available array axes for this channel
-        check_lib_status(status)
+        if status: raise DWError(status)
         if narray_infos.value < 1:
             raise IndexError(f'DWIGetArrayInfoCount({self.index})={narray_infos} should be >0')
         axes = (DWArrayInfoStruct * narray_infos.value)()
         status = DLL.DWIGetArrayInfoList(self.reader_handle, self.index, axes)
-        check_lib_status(status)
+        if status: raise DWError(status)
 
         axes = [DWArrayInfo(ax, self) for ax in axes]
 
@@ -405,7 +405,7 @@ class DWChannel(DWChannelStruct):
         status = DLL.DWIGetScaledSamples(self.reader_handle, self.index,
                                        ctypes.c_longlong(0), ctypes.c_longlong(self.number_of_samples),
                                        data.ctypes, time.ctypes)
-        check_lib_status(status)
+        if status: raise DWError(status)
 
         return time, data
 
@@ -427,7 +427,7 @@ class DWChannel(DWChannelStruct):
             bin_samples = (DWBinarySample * sample_cnt)()
             status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, bin_samples,
                                              timestamps)
-            check_lib_status(status)
+            if status: raise DWError(status)
 
             bin_buf_size = 1024
             bin_data = []
@@ -440,7 +440,7 @@ class DWChannel(DWChannelStruct):
                     ctypes.byref(bin_rec), ctypes.byref(bin_buf),
                     ctypes.byref(bin_buf_pos), bin_buf_size
                 )
-                check_lib_status(status)
+                if status: raise DWError(status)
 
                 bin_data.append(decode_bytes(bin_buf.value))
 
@@ -493,7 +493,7 @@ class DWChannel(DWChannelStruct):
                 self.index,
                 ctypes.c_longlong(chunk), ctypes.c_longlong(chunk_size),
                 data.ctypes, time.ctypes)
-            check_lib_status(status)
+            if status: raise DWError(status)
 
             time, ix = np.unique(time[:chunk_size], return_index=True)
             yield pd.Series(
@@ -507,7 +507,7 @@ class DWChannel(DWChannelStruct):
         block_size = ctypes.c_double()
         status = DLL.DWIGetReducedValuesCount(self.reader_handle, self.index,
             ctypes.byref(count), ctypes.byref(block_size))
-        check_lib_status(status)
+        if status: raise DWError(status)
 
         # Define a numpy structured data type to hold DWReducedValue
         reduced_dtype = np.dtype([
@@ -521,7 +521,7 @@ class DWChannel(DWChannelStruct):
         # Allocate memory and retrieve data
         data = np.empty(count.value, dtype=reduced_dtype)
         status = DLL.DWIGetReducedValues(self.reader_handle, self.index, 0, count, data.ctypes)
-        check_lib_status(status)
+        if status: raise DWError(status)
 
         return pd.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
@@ -585,6 +585,25 @@ class DWEventType(IntEnum):
     etCursorInfo = 26
     etAlarmLevel = 27
 
+class DWError(RuntimeError):
+    """Interpret error number returned from DLL"""
+
+    def __init__(self, status: int):
+        self.status = DWStatus(status)
+        super(DWError, self).__init__(self.status)
+        if hasattr(self, "add_note"):  # added in python 3.11
+            self.add_note(self.message())
+
+    def message(self) -> str:
+        """Request error message string from DLL"""
+        err_msg_len = ctypes.c_int(1024)
+        err_msg = create_string_buffer(err_msg_len.value)
+        err_status = ctypes.c_int(self.status.value)
+
+        DLL.DWGetLastStatus(ctypes.byref(err_status), err_msg,
+                                  ctypes.byref(err_msg_len))
+        return decode_bytes(err_msg.value)
+
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""
     def __init__(self, source: Optional[str]=None):
@@ -596,7 +615,7 @@ class DWFile(dict):
 
         reader_handle = ctypes.c_void_p()
         status = DLL.DWICreateReader(ctypes.byref(reader_handle))
-        check_lib_status(status)
+        if status: raise DWError(status)
         self.reader_handle = reader_handle
         atexit.register(self.close)  # for interpreter shutdown
 
@@ -611,22 +630,22 @@ class DWFile(dict):
             c_source = ctypes.c_char_p(source.encode(encoding=encoding))
             # DWIOpenDataFile outputs DWFileInfo struct, however DWFile is marked as deprecated
             status = DLL.DWIOpenDataFile(self.reader_handle, c_source, ctypes.byref(self.info))
-            check_lib_status(status)
+            if status: raise DWError(status)
             self.name = source
 
             # fill all DWMeasurementInfo fields not filled by DWIOpenDataFile
             status = DLL.DWIGetMeasurementInfo(self.reader_handle, ctypes.byref(self.info))
-            check_lib_status(status)
+            if status: raise DWError(status)
             self.closed = False
 
             # Read channel metadata
             ch_count = ctypes.c_longlong()
             status = DLL.DWIGetChannelListCount(self.reader_handle, ctypes.byref(ch_count))
-            check_lib_status(status)
+            if status: raise DWError(status)
             channel_structs = (DWChannelStruct * ch_count.value)()
 
             status = DLL.DWIGetChannelList(self.reader_handle, channel_structs)
-            check_lib_status(status)
+            if status: raise DWError(status)
 
             def unique_key(base: str) -> str:
                 "Generate a unique string key starting with given base"
@@ -645,11 +664,11 @@ class DWFile(dict):
             # read binary channel metadata
             bin_ch_count = ctypes.c_longlong()
             status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
-            check_lib_status(status)
+            if status: raise DWError(status)
             bin_channel_structs = (DWChannelStruct * bin_ch_count.value)()
 
             status = DLL.DWIGetBinChannelList(self.reader_handle, bin_channel_structs)
-            check_lib_status(status)
+            if status: raise DWError(status)
  
             for channel_struct in bin_channel_structs:
                 channel = DWChannel(channel_struct, self.reader_handle)
@@ -676,15 +695,15 @@ class DWFile(dict):
         text_ = ctypes.create_string_buffer(200)
         count = ctypes.c_longlong()
         status = DLL.DWIGetHeaderEntryCount(self.reader_handle, ctypes.byref(count))
-        check_lib_status(status)
+        if status: raise DWError(status)
         for i in range(count.value):
             status = DLL.DWIGetHeaderEntryTextF(self.reader_handle, i, text_, len(text_))
-            check_lib_status(status)
+            if status: raise DWError(status)
             text = decode_bytes(text_.value)
             if len(text) and not(text.startswith('Select...') or
                     text.startswith('To fill out')):
                 status = DLL.DWIGetHeaderEntryNameF(self.reader_handle, i, name_, len(name_))
-                check_lib_status(status)
+                if status: raise DWError(status)
                 header[decode_bytes(name_.value)] = text
         return header
 
@@ -692,21 +711,21 @@ class DWFile(dict):
     def storing_type(self):
         storing_type = ctypes.c_int()
         status = DLL.DWIGetStoringType(self.reader_handle, ctypes.byref(storing_type))
-        check_lib_status(status)
+        if status: raise DWError(status)
         return DWStoringType(storing_type.value)
 
     def export_header(self, file_name):
         """Export header as .xml file"""
         c_file_name = ctypes.c_char_p(file_name.encode(encoding=encoding))
         status = DLL.DWIExportHeader(self.reader_handle, c_file_name)
-        check_lib_status(status)
+        if status: raise DWError(status)
         return 0
 
     def events(self):
         """Load and return timeseries of file events"""
         count = ctypes.c_longlong()
         status = DLL.DWIGetEventListCount(self.reader_handle, ctypes.byref(count))
-        check_lib_status(status)
+        if status: raise DWError(status)
 
         time_stamp = np.empty(count.value, dtype=np.double)
         event_type = np.empty(count.value, dtype=np.longlong)
@@ -715,7 +734,7 @@ class DWFile(dict):
         if count.value:
             events = (DWEvent * count.value)()
             status = DLL.DWIGetEventList(self.reader_handle, events)
-            check_lib_status(status)
+            if status: raise DWError(status)
             for i, e in enumerate(events):
                 time_stamp[i] = e.time_stamp
                 event_type[i] = e.event_type
@@ -895,18 +914,3 @@ def decode_bytes(byte_string):
     if isinstance(byte_string, bytes):
         return byte_string.decode(encoding=encoding, errors='replace').rstrip('\x00')
     return byte_string
-
-def check_lib_status(status: int):
-    """Check the status returned by the library functions."""
-    if status == DWStatus.DWSTAT_OK:
-        return
-
-    err_msg_len = ctypes.c_int(1024)
-    err_msg = create_string_buffer(err_msg_len.value)
-    err_status = ctypes.c_int(status)
-
-    while DLL.DWGetLastStatus(ctypes.byref(err_status), err_msg,
-                              ctypes.byref(err_msg_len)) == DWStatus.DWSTAT_ERROR_NO_MEMORY_ALLOC:
-        err_msg = create_string_buffer(err_msg_len.value)
-
-    raise RuntimeError(f"Error {err_status.value} ({DWStatus(err_status.value).name}): {decode_bytes(err_msg.value)}")

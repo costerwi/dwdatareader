@@ -34,6 +34,27 @@ class TestDW(unittest.TestCase):
                 msg="accessing channel metadata"):
             d7d['ENG_RPM']  # I/O operation on closed file
 
+    def test_DWError(self):
+        """Should raise DWError with status and message members"""
+        try:
+            with dw.DWFile(__file__) as d7d:
+                pass
+        except dw.DWError as e:
+            self.assertEqual(e.status, dw.DWStatus.DWSTAT_ERROR_FILE_CORRUPT)
+            self.assertEqual(e.message(), "File is corrupted or has invalid format")
+
+    def test_missing_file(self):
+        """Should fail to open missing file"""
+        with self.assertRaises(dw.DWError):
+            with dw.DWFile("abcdef") as d7d:
+                pass
+
+    def test_corrupt_file(self):
+        """Should fail to open file of wrong format"""
+        with self.assertRaises(dw.DWError):
+            with dw.DWFile(__file__) as d7d:
+                pass
+
     def test_keys(self):
         """Check iteration of channel names"""
         with dw.DWFile(self.d7dname) as d7d:
@@ -215,8 +236,8 @@ class TestDW(unittest.TestCase):
     def test_encoding_utf32(self):
         """ Check that wrong encoding raises an error """
         dw.encoding = 'utf-32'
-        with self.assertRaises(RuntimeError):
-            dw.open_file(self.d7dname)
+        with self.assertRaises(dw.DWError):
+            dw.DWFile(self.d7dname)
 
 
 if __name__ == '__main__':
