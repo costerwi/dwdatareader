@@ -16,10 +16,9 @@ import platform
 import atexit
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Any, List
 from enum import IntEnum
 from xml.etree import ElementTree
-from typing import Tuple
+from typing import Any, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,7 +27,7 @@ __all__ = ['get_version', 'open_file']
 __version__ = '1.0.0'
 
 encoding = 'utf-8'  # default encoding
-DLL: getattr(ctypes, "WinDLL", ctypes.CDLL)
+DLL: ctypes.CDLL
 
 class DWArrayInfoStruct(ctypes.Structure):
     """
@@ -256,7 +255,7 @@ class DWChannel(DWChannelStruct):
         series_generator: channel data in chunked Pandas Series format
         reduced: reduced (averaged) data as a Pandas DataFrame
     """
-    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes._Pointer, *args: Any, **kw: Any) -> None:
+    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes.c_void_p, *args: Any, **kw: Any) -> None:
         """
         Initializes an instance of the class and copies the contents of the channel structure.
 
@@ -431,7 +430,7 @@ class DWChannel(DWChannelStruct):
             check_lib_status(status)
 
             bin_buf_size = 1024
-            data = []
+            bin_data = []
             for i in range(sample_cnt):
                 bin_rec = bin_samples[i]
                 bin_buf = create_string_buffer(bin_buf_size)
@@ -443,10 +442,10 @@ class DWChannel(DWChannelStruct):
                 )
                 check_lib_status(status)
 
-                data.append(decode_bytes(bin_buf.value))
+                bin_data.append(decode_bytes(bin_buf.value))
 
             # Return as a Pandas DataFrame
-            return pd.DataFrame({self.unique_key: data}, index=np.array(timestamps))
+            return pd.DataFrame({self.unique_key: bin_data}, index=np.array(timestamps))
         else:
             time, data = self.scaled()
 
@@ -588,10 +587,9 @@ class DWEventType(IntEnum):
 
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""
-    def __init__(self, source=None):
+    def __init__(self, source: Optional[str]=None):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
-        self.info = None
 
         global DLL
         DLL = load_library()
@@ -605,7 +603,7 @@ class DWFile(dict):
         if source:
             self.open(source)
 
-    def open(self, source):
+    def open(self, source: str):
         """Open the specified file and read channel metadata"""
         try:
             # Open the d7d file
@@ -726,8 +724,8 @@ class DWFile(dict):
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
 
-    def _build_dataframe(self, channels: List = None) -> pd.DataFrame:
-        if channels is None or len(channels) == 0:
+    def _build_dataframe(self, channels: List = []) -> pd.DataFrame:
+        if not channels:
             return pd.DataFrame()
 
         channel_dfs = [self[ch_name].dataframe() for ch_name in channels]
@@ -739,32 +737,29 @@ class DWFile(dict):
                 df = df.drop(columns=['key_0'])
         return df
 
-    def _assemble_channels(self, channels: List = None, ignore_channels: List = None, ch_type: DWChannelType = None) -> List:
-        if ignore_channels is None:
-            ignore_channels = []
-
-        if channels is None:
+    def _assemble_channels(self, channels: List[str], ignore_channels: List[str] = [], ch_type: Optional[DWChannelType] = None) -> List[str]:
+        """Filter channels according to optional criteria"""
+        if not channels:
             # Return dataframe of all channels by default
-            channels = [ch.unique_key for ch in self.values()
-                        if ch.unique_key not in ignore_channels]
-        else:
-            channels = [ch for ch in channels
-                        if ch not in ignore_channels]
+            channels = list(self.keys())
+
+        channels = [ch for ch in channels
+                    if ch not in ignore_channels]
 
         if ch_type is not None:
             channels = [ch for ch in channels if self[ch].channel_type == ch_type]
 
         return channels
 
-    def dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+    def dataframe(self, channels: List[str] = [], ignore_channels: List[str] = []) -> pd.DataFrame:
         channels = self._assemble_channels(channels, ignore_channels)
         return self._build_dataframe(channels)
 
-    def sync_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+    def sync_dataframe(self, channels: List[str] = [], ignore_channels: List[str] = []) -> pd.DataFrame:
         channels = self._assemble_channels(channels, ignore_channels, DWChannelType.DW_CH_TYPE_SYNC)
         return self._build_dataframe(channels)
 
-    def async_dataframe(self, channels: List = None, ignore_channels: List = None) -> pd.DataFrame:
+    def async_dataframe(self, channels: List[str] = [], ignore_channels: List[str] = []) -> pd.DataFrame:
         channels = self._assemble_channels(channels, ignore_channels, DWChannelType.DW_CH_TYPE_ASYNC)
         return self._build_dataframe(channels)
 
@@ -853,7 +848,7 @@ def get_version():
 
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
 
-def open_file(source):
+def open_file(source: str):
     return DWFile(source)
 
 def load_library(custom_path=None):
