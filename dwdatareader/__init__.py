@@ -754,22 +754,20 @@ class DWFile(dict):
 
     def events(self):
         """Load and return timeseries of file events"""
-        count = ctypes.c_longlong()
-        status = DLL.DWIGetEventListCount(self.reader_handle, ctypes.byref(count))
+        time_stamp = []
+        event_type = []
+        event_text = []
+        nEvents = ctypes.c_longlong()
+        status = DLL.DWIGetEventListCount(self.reader_handle, ctypes.byref(nEvents))
         if status: raise DWError(status)
-
-        time_stamp = np.empty(count.value, dtype=np.double)
-        event_type = np.empty(count.value, dtype=np.longlong)
-        event_text = np.empty(count.value, dtype=object)
-
-        if count.value:
-            events = (DWEvent * count.value)()
-            status = DLL.DWIGetEventList(self.reader_handle, events)
+        if nEvents.value:
+            events_ = (DWEvent * nEvents.value)()
+            status = DLL.DWIGetEventList(self.reader_handle, events_)
             if status: raise DWError(status)
-            for i, e in enumerate(events):
-                time_stamp[i] = e.time_stamp
-                event_type[i] = e.event_type
-                event_text[i] = str(e.event_text)
+            for e in events_:
+                time_stamp.append(e.time_stamp)
+                event_type.append(e.event_type)
+                event_text.append(e.event_text)
         return pd.DataFrame(
                 data = {'type': event_type, 'text': event_text},
                 index = time_stamp)
