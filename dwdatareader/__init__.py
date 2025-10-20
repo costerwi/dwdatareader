@@ -635,10 +635,9 @@ class DWFile(dict):
         global DLL
         DLL = load_library()
 
-        reader_handle = ctypes.c_void_p()
-        status = DLL.DWICreateReader(ctypes.byref(reader_handle))
+        self.reader_handle = ctypes.c_void_p()
+        status = DLL.DWICreateReader(ctypes.byref(self.reader_handle))
         if status: raise DWError(status)
-        self.reader_handle = reader_handle
         atexit.register(self.close)  # for interpreter shutdown
 
         if source:
