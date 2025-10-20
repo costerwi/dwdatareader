@@ -900,7 +900,10 @@ def get_version():
 
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
 
-def open_file(source: str):
+def open_file(source: str) -> DWFile:
+    """Open and return a DWFile based on the source filename
+    Deprecated: Use DWFile(source) directly instead.
+    """
     return DWFile(source)
 
 def load_library(custom_path=None):
