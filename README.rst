@@ -15,8 +15,8 @@ This is a Python module to interact with the DEWESoft DWDataReaderLib shared lib
 Installation
 ------------
 
-The module is available on https://pypi.python.org/pypi/dwdatareader so all
-one needs to do is:
+The module is available on https://pypi.org/project/dwdatareader/
+so all one needs to do is:
 
 ::
 
