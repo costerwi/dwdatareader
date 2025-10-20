@@ -5,6 +5,7 @@ Execute with:
     python test_module.py
 """
 import os
+import datetime
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -78,6 +79,16 @@ class TestDW(unittest.TestCase):
         with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
             self.assertEqual(100, d7d.info.sample_rate)
+            start_store_time = d7d.info.start_store_time
+            self.assertEqual(21, start_store_time.hour)
+            self.assertEqual(9, start_store_time.day)
+            self.assertEqual(10, start_store_time.month)
+            self.assertEqual(2003, start_store_time.year)
+            start_measure_time = d7d.info.start_measure_time
+            self.assertEqual(21, start_measure_time.hour)
+            self.assertEqual(9, start_measure_time.day)
+            self.assertEqual(10, start_measure_time.month)
+            self.assertEqual(2003, start_measure_time.year)
 
     def test_metadata(self):
         """Make sure channel metadata is correctly loaded."""
