@@ -18,7 +18,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from enum import IntEnum
 from xml.etree import ElementTree
-from typing import Any, List, Tuple, Optional
+from typing import Any, Callable, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -245,7 +245,7 @@ class DWChannel(DWChannelStruct):
     channel data of various data types.
 
     Attributes:
-        reader_handle: pointer to the DLL reader instance
+        dwFile: reference to the DWFile containing this channel
 
     Methods:
         number_of_samples: number of samples in the channel
@@ -262,28 +262,10 @@ class DWChannel(DWChannelStruct):
         series_generator: channel data in chunked Pandas Series format
         reduced: reduced (averaged) data as a Pandas DataFrame
     """
-    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes.c_void_p) -> None:
-        """
-        Initializes an instance of the class and copies the contents of the channel structure.
 
-        Attributes:
-            reader_handle: pointer to the DLL reader instance
-
-        Arguments:
-            channel_struct (DWChannelStruct): channel structure to initialize the instance with
-            reader_handle (ctypes._Pointer): pointer reader handle
-            *args (Any): additional positional arguments for the parent class (DWChannelStruct) initialization
-            **kw (Any): additional keyword arguments for the parent class (DWChannelStruct) initialization
-
-        """
+    def __init__(self):
         super().__init__()
-
-        # Create a new instance by copying the buffer memory from parent class
-        for field_name, _ in self._fields_:
-            setattr(self, field_name, getattr(channel_struct, field_name))
-
-        self.reader_handle = reader_handle
-        self.unique_key = self.long_name  # this can be overriden in DWFile
+        self.dwFile = None
 
     @property
     def dtype(self):
@@ -293,7 +275,7 @@ class DWChannel(DWChannelStruct):
 
     def _chan_prop_int(self, chan_prop):
         prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
-        status = DLL.DWIGetChannelProps(self.reader_handle,
+        status = DLL.DWIGetChannelProps(self.dwFile.reader_handle,
                                       self.index,
                                       ctypes.c_int(chan_prop),
                                       ctypes.byref(prop_int),
@@ -315,7 +297,7 @@ class DWChannel(DWChannelStruct):
         """
         count = ctypes.c_longlong(ctypes.sizeof(ctypes.c_double))
         prop_double = ctypes.c_double(0)
-        status = DLL.DWIGetChannelProps(self.reader_handle,
+        status = DLL.DWIGetChannelProps(self.dwFile.reader_handle,
                                       self.index, ctypes.c_int(chan_prop), ctypes.byref(prop_double),
                                       ctypes.byref(count))
         if status: raise DWError(status)
@@ -336,7 +318,7 @@ class DWChannel(DWChannelStruct):
         """
         len_str = self._chan_prop_int(chan_prop_len)
         str_buff = ctypes.create_string_buffer(len_str.value)
-        status = DLL.DWIGetChannelProps(self.reader_handle,
+        status = DLL.DWIGetChannelProps(self.dwFile.reader_handle,
                                       self.index, ctypes.c_int(chan_prop), str_buff,
                                       ctypes.byref(len_str))
         if status: raise DWError(status)
@@ -346,11 +328,11 @@ class DWChannel(DWChannelStruct):
     def number_of_samples(self):
         count = ctypes.c_longlong()
         if self.data_type == DWDataType.dtBinary:
-            status = DLL.DWIGetBinarySamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+            status = DLL.DWIGetBinarySamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
         if self._is_complex():
-            status = DLL.DWIGetComplexScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+            status = DLL.DWIGetComplexScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
         else:
-            status = DLL.DWIGetScaledSamplesCount(self.reader_handle, self.index, ctypes.byref(count))
+            status = DLL.DWIGetScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
         if status: raise DWError(status)
         return count.value
 
@@ -387,12 +369,12 @@ class DWChannel(DWChannelStruct):
         if self.array_size < 2:
             return []
         narray_infos = ctypes.c_longlong()
-        status = DLL.DWIGetArrayInfoCount(self.reader_handle, self.index, ctypes.byref(narray_infos)) # available array axes for this channel
+        status = DLL.DWIGetArrayInfoCount(self.dwFile.reader_handle, self.index, ctypes.byref(narray_infos)) # available array axes for this channel
         if status: raise DWError(status)
         if narray_infos.value < 1:
             raise IndexError(f'DWIGetArrayInfoCount({self.index})={narray_infos} should be >0')
         axes = (DWArrayInfoStruct * narray_infos.value)()
-        status = DLL.DWIGetArrayInfoList(self.reader_handle, self.index, axes)
+        status = DLL.DWIGetArrayInfoList(self.dwFile.reader_handle, self.index, axes)
         if status: raise DWError(status)
 
         axes = [DWArrayInfo(ax, self) for ax in axes]
@@ -417,7 +399,7 @@ class DWChannel(DWChannelStruct):
         data = np.zeros(count*self.array_size, dtype=self.dtype())
         time = np.zeros(count, dtype=np.double)
         status = self.get_scaled_samples()(
-            self.reader_handle,
+            self.dwFile.reader_handle,
             self.index,
             ctypes.c_longlong(0),
             ctypes.c_longlong(count),
@@ -447,7 +429,7 @@ class DWChannel(DWChannelStruct):
 
             timestamps = (ctypes.c_double * sample_cnt)()
             bin_samples = (DWBinarySample * sample_cnt)()
-            status = DLL.DWIGetBinRecSamples(self.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, bin_samples,
+            status = DLL.DWIGetBinRecSamples(self.dwFile.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, bin_samples,
                                              timestamps)
             if status: raise DWError(status)
 
@@ -458,7 +440,7 @@ class DWChannel(DWChannelStruct):
                 bin_buf = create_string_buffer(bin_buf_size)
                 bin_buf_pos = ctypes.c_longlong(0)
                 status = DLL.DWIGetBinData(
-                    self.reader_handle, self.index,
+                    self.dwFile.reader_handle, self.index,
                     ctypes.byref(bin_rec), ctypes.byref(bin_buf),
                     ctypes.byref(bin_buf_pos), bin_buf_size
                 )
@@ -511,7 +493,7 @@ class DWChannel(DWChannelStruct):
         for chunk in range(0, count, chunk_size):
             chunk_size = min(chunk_size, count - chunk)
             status = DLL.DWIGetScaledSamples(
-                self.reader_handle,
+                self.dwFile.reader_handle,
                 self.index,
                 ctypes.c_longlong(chunk), ctypes.c_longlong(chunk_size),
                 data.ctypes, time.ctypes)
@@ -527,7 +509,7 @@ class DWChannel(DWChannelStruct):
         """Load reduced (averaged) data as Pandas DataFrame"""
         count = ctypes.c_longlong()
         block_size = ctypes.c_double()
-        status = DLL.DWIGetReducedValuesCount(self.reader_handle, self.index,
+        status = DLL.DWIGetReducedValuesCount(self.dwFile.reader_handle, self.index,
             ctypes.byref(count), ctypes.byref(block_size))
         if status: raise DWError(status)
 
@@ -542,7 +524,7 @@ class DWChannel(DWChannelStruct):
 
         # Allocate memory and retrieve data
         data = np.empty(count.value, dtype=reduced_dtype)
-        status = DLL.DWIGetReducedValues(self.reader_handle, self.index, 0, count, data.ctypes)
+        status = DLL.DWIGetReducedValues(self.dwFile.reader_handle, self.index, 0, count, data.ctypes)
         if status: raise DWError(status)
 
         return pd.DataFrame(data, index=data['time_stamp'],
@@ -628,7 +610,18 @@ class DWError(RuntimeError):
 
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""
-    def __init__(self, source: Optional[str]=None):
+    def __init__(self, source: Optional[str]=None, key: Optional[Callable]=None):
+        """
+        Parameters:
+        source (str): optional file name to open
+        key (callable): optional function which takes a DWChannel parameter and returns its key
+               default: lambda channel: channel.long_name
+
+        Members:
+        name (str): Name of the open file
+        closed (bool): Whether the file is closed
+        """
+
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
 
@@ -639,6 +632,12 @@ class DWFile(dict):
         status = DLL.DWICreateReader(ctypes.byref(self.reader_handle))
         if status: raise DWError(status)
         atexit.register(self.close)  # for interpreter shutdown
+
+        if key:
+            assert callable(key), "The key parameter should take a DWChannel parameter and return its key"
+            self.key = key
+        else:
+            self.key = lambda channel: channel.long_name
 
         if source:
             self.open(source)
@@ -659,55 +658,53 @@ class DWFile(dict):
             if status: raise DWError(status)
             self.closed = False
 
+            def add(channel: DWChannel):
+                "Add the given channel to this DWFile dict using a unique key"
+                channel.dwFile = self
+                key = self.key(channel)
+                unique_key = key  # start with the key itself
+                suffix = 0
+                while unique_key in self:
+                    suffix -= 1
+                    unique_key = f'{key}{suffix}'
+                channel.unique_key = unique_key
+                self[unique_key] = channel
+
             # Read channel metadata
             ch_count = ctypes.c_longlong()
             status = DLL.DWIGetChannelListCount(self.reader_handle, ctypes.byref(ch_count))
             if status: raise DWError(status)
-            channel_structs = (DWChannelStruct * ch_count.value)()
+            channel_array = (DWChannel * ch_count.value)()
 
-            status = DLL.DWIGetChannelList(self.reader_handle, channel_structs)
+            status = DLL.DWIGetChannelList(self.reader_handle, channel_array)
             if status: raise DWError(status)
 
+            for channel in channel_array:
+                add(channel)
+
+            # read complex channel metadata
             ch_count_complex = ctypes.c_longlong()
             status = DLL.DWIGetComplexChannelListCount(self.reader_handle, ctypes.byref(ch_count_complex))
             if status: raise DWError(status)
-            channel_structs_complex = (DWChannelStruct * ch_count_complex.value)()
+            channel_structs_complex = (DWChannel * ch_count_complex.value)()
 
-            status = DLL.DWIGetComplexChannelList(self.reader_handle, channel_structs)
+            status = DLL.DWIGetComplexChannelList(self.reader_handle, channel_structs_complex)
             if status: raise DWError(status)
 
-            def unique_key(base: str) -> str:
-                "Generate a unique string key starting with given base"
-                key = base  # start with the base itself
-                suffix = 0
-                while key in self:
-                    suffix -= 1
-                    key = f'{base}{suffix}'
-                return key
-
-            for channel_struct in channel_structs:
-                channel = DWChannel(channel_struct, self.reader_handle)
-                channel.unique_key = unique_key(channel.long_name)
-                self[channel.unique_key] = channel
-
-            for channel_struct in channel_structs_complex:
-                channel = DWChannel(channel_struct, self.reader_handle)
-                channel.unique_key = unique_key(channel.long_name)
-                self[channel.unique_key] = channel
+            for channel in channel_structs_complex:
+                add(channel)
 
             # read binary channel metadata
             bin_ch_count = ctypes.c_longlong()
             status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
             if status: raise DWError(status)
-            bin_channel_structs = (DWChannelStruct * bin_ch_count.value)()
+            channel_array = (DWChannel * bin_ch_count.value)()
 
-            status = DLL.DWIGetBinChannelList(self.reader_handle, bin_channel_structs)
+            status = DLL.DWIGetBinChannelList(self.reader_handle, channel_array)
             if status: raise DWError(status)
- 
-            for channel_struct in bin_channel_structs:
-                channel = DWChannel(channel_struct, self.reader_handle)
-                channel.unique_key = unique_key(channel.long_name)
-                self[channel.unique_key] = channel
+
+            for channel in channel_array:
+                add(channel)
 
         except RuntimeError:
             self.close()
