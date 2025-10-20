@@ -848,6 +848,10 @@ class DWMeasurementInfo(ctypes.Structure):
         ("_start_store_time", ctypes.c_double),
         ("duration", ctypes.c_double)
     ]
+    epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
+
+    def __init__(self):
+        super().__init__()
 
     def __str__(self):
         return f"{self.sample_rate} Hz | {self.start_measure_time} | {self.start_store_time} | {self.duration} s"
@@ -862,10 +866,6 @@ class DWMeasurementInfo(ctypes.Structure):
         """Return start_store_time in Python datetime format"""
         return self.epoch + timedelta(self._start_measure_time)
 
-    @property
-    def epoch(self):
-        epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-        return epoch
 
 class DWStatus(IntEnum):
     """Status codes returned from library function calls"""
