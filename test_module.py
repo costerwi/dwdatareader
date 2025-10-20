@@ -32,7 +32,7 @@ class TestDW(unittest.TestCase):
 
         # The d7d should be closed outside the above context
         self.assertTrue(d7d.closed, 'd7d did not close')
-        with self.assertRaises(ValueError,
+        with self.assertRaises(dw.DWError,
                 msg="accessing channel data"):
             ch.series() # ScaledSamplesCount returns -1
         with self.assertRaises(KeyError,
@@ -73,6 +73,17 @@ class TestDW(unittest.TestCase):
             self.assertFalse(d7d.closed, 'd7d did not open')
             for key, value in d7d.items():
                 self.assertTrue(key.startswith(value.long_name))
+
+    def test_alternate_key(self):
+        """Check that alternate channel keys are working."""
+        with dw.DWFile(self.d7dname, key=lambda ch: ch.index) as d7d:
+            self.assertFalse(d7d.closed, 'd7d did not open')
+            ch = d7d[10]  # using channel.index as key
+            self.assertEqual(ch.name, "V_SPEED")
+            with self.assertRaises(KeyError, msg="Referring to channel name"):
+                d7d['V_SPEED']
+        with self.assertRaises(AssertionError, msg="key not callable"):
+            dw.DWFile(self.d7dname, key=7)
 
     def test_info(self):
         """Check that the file info was read correctly."""
