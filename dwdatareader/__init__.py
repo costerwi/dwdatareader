@@ -262,7 +262,7 @@ class DWChannel(DWChannelStruct):
         series_generator: channel data in chunked Pandas Series format
         reduced: reduced (averaged) data as a Pandas DataFrame
     """
-    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes.c_void_p, *args: Any, **kw: Any) -> None:
+    def __init__(self, channel_struct: DWChannelStruct, reader_handle: ctypes.c_void_p) -> None:
         """
         Initializes an instance of the class and copies the contents of the channel structure.
 
@@ -276,12 +276,11 @@ class DWChannel(DWChannelStruct):
             **kw (Any): additional keyword arguments for the parent class (DWChannelStruct) initialization
 
         """
-        super().__init__(*args, **kw)
+        super().__init__()
 
         # Create a new instance by copying the buffer memory from parent class
-        new_struct = self.__class__.from_buffer_copy(bytearray(channel_struct))
         for field_name, _ in self._fields_:
-            setattr(self, field_name, getattr(new_struct, field_name))
+            setattr(self, field_name, getattr(channel_struct, field_name))
 
         self.reader_handle = reader_handle
         self.unique_key = self.long_name  # this can be overriden in DWFile
