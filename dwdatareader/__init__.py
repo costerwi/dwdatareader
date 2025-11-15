@@ -595,18 +595,16 @@ class DWError(RuntimeError):
     def __init__(self, status: int):
         self.status = DWStatus(status)
         super(DWError, self).__init__(self.status)
-        if hasattr(self, "add_note"):  # added in python 3.11
-            self.add_note(self.message())
-
-    def message(self) -> str:
-        """Request error message string from DLL"""
+        # Request error message string from DLL
         err_msg_len = ctypes.c_int(1024)
-        err_msg = create_string_buffer(err_msg_len.value)
+        err_msg = ctypes.create_string_buffer(err_msg_len.value)
         err_status = ctypes.c_int(self.status.value)
 
         DLL.DWGetLastStatus(ctypes.byref(err_status), err_msg,
                                   ctypes.byref(err_msg_len))
-        return decode_bytes(err_msg.value)
+        self.message = decode_bytes(err_msg.value[:err_msg_len.value])
+        if hasattr(self, "add_note"):  # added in python 3.11
+            self.add_note(self.message)
 
 class DWFile(dict):
     """Data file type mapping channel names their metadata"""

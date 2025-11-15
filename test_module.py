@@ -46,7 +46,7 @@ class TestDW(unittest.TestCase):
                 pass
         except dw.DWError as e:
             self.assertEqual(e.status, dw.DWStatus.DWSTAT_ERROR_FILE_CORRUPT)
-            self.assertEqual(e.message(), "File is corrupted or has invalid format")
+            self.assertEqual(e.message, "File is corrupted or has invalid format")
 
     def test_missing_file(self):
         """Should fail to open missing file"""
