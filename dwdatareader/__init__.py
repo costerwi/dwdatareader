@@ -625,11 +625,12 @@ class DWFile(dict):
         self.reader_handle = ctypes.c_void_p(None)
         atexit.register(self.close)  # for interpreter shutdown
 
-        if key:
+        if key is None:
+            # Default is to use channel.long_name
+            self.key = lambda channel: channel.long_name
+        else:
             assert callable(key), "The key parameter should take a DWChannel parameter and return its key"
             self.key = key
-        else:
-            self.key = lambda channel: channel.long_name
 
         if source:
             self.open(source)
