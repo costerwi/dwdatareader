@@ -201,18 +201,11 @@ class DWChannelStruct(ctypes.Structure):
         """The unit of measurement used by the channel"""
         return decode_bytes(self._unit)
 
-    def get_scaled_samples(self):
-        if self.data_type == DWDataType.dtBinary:
-            return DLL.DWIGetBinarySamples
-        if self._is_complex():
-            return DLL.DWIGetComplexScaledSamples
-        else:
-            return DLL.DWIGetScaledSamples
-
     @property
     def description(self):
         """A short explanation of what the channel measures"""
         return decode_bytes(self._description)
+
     @property
     def data_type(self):
         """The type of data stored in the channel"""
@@ -265,12 +258,6 @@ class DWChannel(DWChannelStruct):
     def __init__(self):
         super().__init__()
         self.dwFile = None
-
-    @property
-    def dtype(self):
-        if self._is_complex():
-            return np.complex128
-        return np.double
 
     def _chan_prop_int(self, chan_prop):
         prop_int = ctypes.c_longlong(ctypes.sizeof(ctypes.c_int))
@@ -326,12 +313,7 @@ class DWChannel(DWChannelStruct):
     @property
     def number_of_samples(self):
         count = ctypes.c_longlong()
-        if self.data_type == DWDataType.dtBinary:
-            status = DLL.DWIGetBinarySamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
-        if self._is_complex():
-            status = DLL.DWIGetComplexScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
-        else:
-            status = DLL.DWIGetScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
+        status = DLL.DWIGetScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
         if status: raise DWError(status)
         return count.value
 
@@ -395,9 +377,9 @@ class DWChannel(DWChannelStruct):
                 first element and the scaled data array as the second element.
         """
         count = self.number_of_samples
-        data = np.zeros(count*self.array_size, dtype=self.dtype())
+        data = np.zeros(count*self.array_size, dtype=np.double)
         time = np.zeros(count, dtype=np.double)
-        status = self.get_scaled_samples()(
+        status = DLL.DWIGetScaledSamples(
             self.dwFile.reader_handle,
             self.index,
             ctypes.c_longlong(0),
@@ -409,9 +391,6 @@ class DWChannel(DWChannelStruct):
 
         return time, data
 
-    def _is_complex(self) -> pd.DataFrame:
-        return self.data_type == DWDataType.dtComplexSingle or self.data_type == DWDataType.dtComplexDouble
-
     def dataframe(self) -> pd.DataFrame:
         """
         Retrieves scaled channel values with their corresponding timestamps in a Pandas DataFrame.
@@ -420,49 +399,21 @@ class DWChannel(DWChannelStruct):
             df (pandas.DataFrame): A Pandas DataFrame containing scaled data with
                                     the timestamps as index
         """
-        if self.data_type == DWDataType.dtBinary:
-            sample_cnt = self.number_of_samples
+        time, data = self.scaled()
+        columns = []
+        if self.array_size == 1:
+            columns.append(self.unique_key)
+        else:  # Channel has multiple axes
+            for array_info in self.array_info:
+                columns.extend(array_info.columns)
+            data = data.reshape(self.number_of_samples, self.array_size)
 
-            assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
-            assert self.array_size == 1
+        df = pd.DataFrame(
+            data=data,
+            index=time,
+            columns=columns)
 
-            timestamps = (ctypes.c_double * sample_cnt)()
-            bin_samples = (DWBinarySample * sample_cnt)()
-            status = DLL.DWIGetBinRecSamples(self.dwFile.reader_handle, self.index,
-                    0, sample_cnt, bin_samples, timestamps)
-            if status: raise DWError(status)
-
-            bin_data = []
-            bin_buf = ctypes.create_string_buffer(1024)
-            bin_buf_pos = ctypes.c_longlong(0)
-            for bin_rec in bin_samples:
-                status = DLL.DWIGetBinData(
-                    self.dwFile.reader_handle, self.index,
-                    ctypes.byref(bin_rec), ctypes.byref(bin_buf),
-                    ctypes.byref(bin_buf_pos), len(bin_buf)
-                )
-                if status: raise DWError(status)
-                bin_data.append(decode_bytes(bin_buf.value))
-
-            # Return as a Pandas DataFrame
-            return pd.DataFrame({self.unique_key: bin_data}, index=np.array(timestamps))
-        else:
-            time, data = self.scaled()
-
-            columns = []
-            if self.array_size == 1:
-                columns.append(self.unique_key)
-            else:  # Channel has multiple axes
-                for array_info in self.array_info:
-                    columns.extend(array_info.columns)
-                data = data.reshape(self.number_of_samples, self.array_size)
-
-            df = pd.DataFrame(
-                data=data,
-                index=time,
-                columns=columns)
-
-            return df
+        return df
 
     def series(self):
         """
@@ -525,6 +476,115 @@ class DWChannel(DWChannelStruct):
 
         return pd.DataFrame(data, index=data['time_stamp'],
                 columns=['ave', 'min', 'max', 'rms'])
+
+class DWBinaryChannel(DWChannel):
+    "Represents a binary data channel, providing methods to access its data."
+
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def number_of_samples(self):
+        count = ctypes.c_longlong()
+        status = DLL.DWIGetBinarySamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
+        if status: raise DWError(status)
+        return count.value
+
+    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Retrieves binary scaled channel values with their corresponding timestamps.
+
+        Returns:
+            time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
+                first element and the scaled data array as the second element.
+        """
+        assert self.data_type == DWDataType.dtBinary
+        count = self.number_of_samples
+        data = np.zeros(count*self.array_size, dtype=np.double)
+        time = np.zeros(count, dtype=np.double)
+        status = DLL.DWIGetBinarySamples(
+            self.dwFile.reader_handle,
+            self.index,
+            ctypes.c_longlong(0),
+            ctypes.c_longlong(count),
+            data.ctypes,
+            time.ctypes,
+        )
+        if status: raise DWError(status)
+        return time, data
+
+    def dataframe(self) -> pd.DataFrame:
+        """
+        Retrieves scaled channel values with their corresponding timestamps in a Pandas DataFrame.
+
+        Returns:
+            df (pandas.DataFrame): A Pandas DataFrame containing scaled data with
+                                    the timestamps as index
+        """
+        sample_cnt = self.number_of_samples
+
+        assert self.data_type == DWDataType.dtBinary
+        assert self.channel_type == DWChannelType.DW_CH_TYPE_ASYNC
+        assert self.array_size == 1
+
+        timestamps = (ctypes.c_double * sample_cnt)()
+        bin_samples = (DWBinarySample * sample_cnt)()
+        status = DLL.DWIGetBinRecSamples(self.dwFile.reader_handle, self.index,
+                0, sample_cnt, bin_samples, timestamps)
+        if status: raise DWError(status)
+
+        bin_data = []
+        bin_buf = ctypes.create_string_buffer(1024)
+        bin_buf_pos = ctypes.c_longlong(0)
+        for bin_rec in bin_samples:
+            status = DLL.DWIGetBinData(
+                self.dwFile.reader_handle, self.index,
+                ctypes.byref(bin_rec), ctypes.byref(bin_buf),
+                ctypes.byref(bin_buf_pos), len(bin_buf)
+            )
+            if status: raise DWError(status)
+            bin_data.append(decode_bytes(bin_buf.value))
+
+        # Return as a Pandas DataFrame
+        return pd.DataFrame({self.unique_key: bin_data}, index=np.array(timestamps))
+
+
+class DWComplexChannel(DWChannel):
+    "Represents a complex data channel, providing methods to access its data."
+
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def number_of_samples(self):
+        count = ctypes.c_longlong()
+        status = DLL.DWIGetComplexScaledSamplesCount(self.dwFile.reader_handle, self.index, ctypes.byref(count))
+        if status: raise DWError(status)
+        return count.value
+
+    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Retrieves complex scaled channel values with their corresponding timestamps.
+
+        Returns:
+            time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
+                first element and the scaled data array as the second element.
+        """
+        assert self.data_type in (DWDataType.dtComplexSingle, DWDataType.dtComplexDouble)
+        count = self.number_of_samples
+        data = np.zeros(count*self.array_size, dtype=np.complex128)
+        time = np.zeros(count, dtype=np.double)
+        status = DLL.DWIGetComplexScaledSamples(
+            self.dwFile.reader_handle,
+            self.index,
+            ctypes.c_longlong(0),
+            ctypes.c_longlong(count),
+            data.ctypes,
+            time.ctypes,
+        )
+        if status: raise DWError(status)
+        return time, data
+
 
 class DWDataType(IntEnum):
     """Specifies the channel data type."""
@@ -681,22 +741,20 @@ class DWFile(dict):
                 add(channel)
 
             # read complex channel metadata
-            ch_count_complex = ctypes.c_longlong()
-            status = DLL.DWIGetComplexChannelListCount(self.reader_handle, ctypes.byref(ch_count_complex))
+            status = DLL.DWIGetComplexChannelListCount(self.reader_handle, ctypes.byref(ch_count))
             if status: raise DWError(status)
-            channel_structs_complex = (DWChannel * ch_count_complex.value)()
+            channel_array = (DWComplexChannel * ch_count.value)()
 
-            status = DLL.DWIGetComplexChannelList(self.reader_handle, channel_structs_complex)
+            status = DLL.DWIGetComplexChannelList(self.reader_handle, channel_array)
             if status: raise DWError(status)
 
-            for channel in channel_structs_complex:
+            for channel in channel_array:
                 add(channel)
 
             # read binary channel metadata
-            bin_ch_count = ctypes.c_longlong()
-            status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(bin_ch_count))
+            status = DLL.DWIGetBinChannelListCount(self.reader_handle, ctypes.byref(ch_count))
             if status: raise DWError(status)
-            channel_array = (DWChannel * bin_ch_count.value)()
+            channel_array = (DWBinaryChannel * ch_count.value)()
 
             status = DLL.DWIGetBinChannelList(self.reader_handle, channel_array)
             if status: raise DWError(status)
