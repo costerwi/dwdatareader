@@ -11,6 +11,9 @@ with dw.DWFile('myfile.d7d') as f:
         print(ch.name, ch.series().mean())
 """
 
+__all__ = ['get_version', 'open_file', 'DWError', 'DWFile']
+__version__ = '1.1.0'
+
 import ctypes
 import platform
 import atexit
@@ -23,11 +26,7 @@ from typing import Any, Callable, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 
-__all__ = ['get_version', 'open_file', 'DWError', 'DWFile']
-__version__ = '1.1.0'
-
 encoding = 'utf-8'  # default encoding
-DLL: ctypes.CDLL
 
 class DWArrayInfoStruct(ctypes.Structure):
     """
@@ -623,9 +622,6 @@ class DWFile(dict):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
 
-        global DLL
-        DLL = load_library()
-
         self.reader_handle = ctypes.c_void_p()
         status = DLL.DWICreateReader(ctypes.byref(self.reader_handle))
         if status: raise DWError(status)
@@ -884,13 +880,27 @@ class DWStoringType(IntEnum):
     ST_FAST_ON_TRIGGER = 2
     ST_FAST_ON_TRIGGER_SLOW_OTH = 3
 
+def loadDLL(dllPath: Optional[Path] = None) -> ctypes.CDLL:
+    global DLL
+    if not dllPath:
+        # Determine appropriate library to load
+        dllName = "DWDataReaderLib"
+        if platform.architecture()[0] == '64bit':
+            dllName += "64"
+        dllPath = Path(__file__).with_name(dllName)
+        if platform.system() == 'Linux':
+            dllPath = dllPath.with_suffix(".so")
+        elif platform.system() == 'Darwin':
+            dllPath = dllPath.with_suffix(".dylib")
+    loader = ctypes.cdll if platform.system() != "Windows" else ctypes.windll # type: ignore[attr-defined]
+    DLL = loader[str(dllPath)]
+    return DLL
+
 def get_version():
     ver_major = ctypes.c_int()
     ver_minor = ctypes.c_int()
     ver_patch = ctypes.c_int()
-    DLL = load_library()
     DLL.DWGetVersionEx(ctypes.byref(ver_major), ctypes.byref(ver_minor), ctypes.byref(ver_patch))
-
     return f"{ver_major.value}.{ver_minor.value}.{ver_patch.value}"
 
 def open_file(source: str) -> DWFile:
@@ -899,38 +909,6 @@ def open_file(source: str) -> DWFile:
     """
     return DWFile(source)
 
-def load_library(custom_path=None):
-    """
-    Load a shared or dynamic library based on platform and architecture.
-    :param custom_path: Optional custom path to load the library from.
-    :return: Loaded library object.
-    """
-    library_extensions = {
-        "Linux": ".so",
-        "Darwin": ".dylib",
-        "Windows": ".dll",
-    }
-
-    system = platform.system()
-    is_64bit = platform.architecture()[0] == '64bit'
-
-    loader = ctypes.CDLL if system != "Windows" else ctypes.WinDLL
-    if custom_path is not None:
-        return loader(custom_path)
-
-    base_name = "DWDataReaderLib"
-    arch_suffix = "64" if is_64bit else ""
-    extension = library_extensions.get(system, "")
-
-    library_name = f"{base_name}{arch_suffix}{extension}"
-    library_path = Path(__file__).parent / library_name
-
-    try:
-        # Load the library
-        return loader(str(library_path))
-    except OSError:
-        # Fallback to direct library name loading
-        return loader(library_name)
 
 def create_string_buffer(string_value, buffer_size=None):
     """Create a string buffer with proper encoding."""
@@ -943,3 +921,5 @@ def decode_bytes(byte_string):
     if isinstance(byte_string, bytes):
         return byte_string.decode(encoding=encoding, errors='replace').rstrip('\x00')
     return byte_string
+
+DLL = loadDLL()  # initialize the DLL immediately
