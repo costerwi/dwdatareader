@@ -622,9 +622,7 @@ class DWFile(dict):
         self.name = ''      # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
 
-        self.reader_handle = ctypes.c_void_p()
-        status = DLL.DWICreateReader(ctypes.byref(self.reader_handle))
-        if status: raise DWError(status)
+        self.reader_handle = ctypes.c_void_p(None)
         atexit.register(self.close)  # for interpreter shutdown
 
         if key:
@@ -638,6 +636,14 @@ class DWFile(dict):
 
     def open(self, source: str):
         """Open the specified file and read channel metadata"""
+
+        if not self.closed:
+            self.close()
+
+        # Create a reader_handle for this file
+        status = DLL.DWICreateReader(ctypes.byref(self.reader_handle))
+        if status: raise DWError(status)
+
         try:
             # Open the d7d file
             self.info = DWMeasurementInfo()
@@ -805,14 +811,14 @@ class DWFile(dict):
         return self._build_dataframe(channels)
 
     def close(self):
-        """Close the d7d file and delete it if temporary"""
+        """Close the d7d file and destroy the reader_handle"""
         if not self.closed:
-            DLL.DWICloseDataFile(self.reader_handle)
-            if self.reader_handle is not None:
-                DLL.DWIDestroyReader(self.reader_handle)
-                self.reader_handle = None
             self.closed = True
             self.clear()  # Delete channel metadata
+        if self.reader_handle.value is not None:
+            DLL.DWICloseDataFile(self.reader_handle)
+            DLL.DWIDestroyReader(self.reader_handle)
+            self.reader_handle.value = None
 
     def __str__(self):
         return self.name
