@@ -64,6 +64,7 @@ class TestDW(unittest.TestCase):
         """Check iteration of channel names"""
         with dw.DWFile(self.d7dname) as d7d:
             self.assertFalse(d7d.closed, 'd7d did not open')
+            self.assertEqual(len(d7d), 20)
             for key in d7d:
                 self.assertTrue(key.startswith(d7d[key].long_name))
 
@@ -260,6 +261,8 @@ class TestDW(unittest.TestCase):
         with self.assertRaises(dw.DWError):
             dw.DWFile(self.d7dname)
 
+    # TODO: need example file and test methods for binary channels
+
     def test_complex_channel_dtypes(self):
         """Check complex channel dtypes"""
         with dw.DWFile(self.complex_dxd_name) as test_file:
@@ -267,10 +270,9 @@ class TestDW(unittest.TestCase):
             complex_channels = [
                 channel_name
                 for channel_name, channel in test_file.items()
-                if channel._is_complex()
+                if isinstance(channel, dw.DWComplexChannel)
             ]
             np.testing.assert_array_equal(
-                # test_file.dataframe_longname(complex_channels).dtypes.values,
                 test_file.dataframe(complex_channels).dtypes.values,
                 np.array([np.dtype("complex128")] * len(complex_channels))
             )
@@ -281,8 +283,9 @@ class TestDW(unittest.TestCase):
             complex_channels = [
                 channel_name
                 for channel_name, channel in test_file.items()
-                if channel._is_complex()
+                if isinstance(channel, dw.DWComplexChannel)
             ]
+            self.assertEqual(len(complex_channels), 33)
             self.assertEqual(test_file.dataframe(complex_channels).shape, (184, 33))
 
 
