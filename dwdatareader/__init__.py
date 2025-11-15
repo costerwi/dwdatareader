@@ -428,23 +428,20 @@ class DWChannel(DWChannelStruct):
 
             timestamps = (ctypes.c_double * sample_cnt)()
             bin_samples = (DWBinarySample * sample_cnt)()
-            status = DLL.DWIGetBinRecSamples(self.dwFile.reader_handle, self.index, ctypes.c_longlong(0), sample_cnt, bin_samples,
-                                             timestamps)
+            status = DLL.DWIGetBinRecSamples(self.dwFile.reader_handle, self.index,
+                    0, sample_cnt, bin_samples, timestamps)
             if status: raise DWError(status)
 
-            bin_buf_size = 1024
             bin_data = []
-            for i in range(sample_cnt):
-                bin_rec = bin_samples[i]
-                bin_buf = create_string_buffer(bin_buf_size)
-                bin_buf_pos = ctypes.c_longlong(0)
+            bin_buf = ctypes.create_string_buffer(1024)
+            bin_buf_pos = ctypes.c_longlong(0)
+            for bin_rec in bin_samples:
                 status = DLL.DWIGetBinData(
                     self.dwFile.reader_handle, self.index,
                     ctypes.byref(bin_rec), ctypes.byref(bin_buf),
-                    ctypes.byref(bin_buf_pos), bin_buf_size
+                    ctypes.byref(bin_buf_pos), len(bin_buf)
                 )
                 if status: raise DWError(status)
-
                 bin_data.append(decode_bytes(bin_buf.value))
 
             # Return as a Pandas DataFrame
