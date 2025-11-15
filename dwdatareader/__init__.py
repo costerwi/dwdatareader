@@ -913,13 +913,6 @@ def open_file(source: str) -> DWFile:
     """
     return DWFile(source)
 
-
-def create_string_buffer(string_value, buffer_size=None):
-    """Create a string buffer with proper encoding."""
-    if isinstance(string_value, str):
-        return ctypes.create_string_buffer(string_value.encode(encoding=encoding), buffer_size)
-    return ctypes.create_string_buffer(string_value, buffer_size)
-
 def decode_bytes(byte_string):
     """Convert bytes to string with proper decoding."""
     if isinstance(byte_string, bytes):
