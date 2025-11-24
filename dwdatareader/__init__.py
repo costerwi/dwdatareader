@@ -327,6 +327,22 @@ class DWChannel(DWChannelStruct):
                                    DWChannelProps.DW_CH_INDEX_LEN)
 
     @property
+    def sample_rate(self):
+        """ Returns the sampling rate of an individual synchronous channel, else 0. """
+        if self._sample_rate == None:
+            if self.channel_type == DWChannelType.DW_CH_TYPE_SYNC:
+                SRDiv = ElementTree.fromstring(self.channel_xml).find("./SRDiv")
+                divisor = float(SRDiv.text) if SRDiv is not None else 1.0
+                self._sample_rate = self.dwFile.info.sample_rate/divisor
+            else:
+                self._sample_rate = 0.0
+        return self._sample_rate
+
+    @sample_rate.setter
+    def sample_rate(self, value):
+        self._sample_rate = value
+
+    @property
     def channel_xml(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_XML,
                                    DWChannelProps.DW_CH_XML_LEN)
@@ -368,21 +384,40 @@ class DWChannel(DWChannelStruct):
     def __repr__(self):
         return self.__str__()
 
-    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves scaled channel values with their corresponding timestamps.
+
+        An optional, slicing time interval T1 and or T2 can be informed for the case of
+        synchronous channels (else ignored).
+        If T1 is not supplied, 0 is assumed.
+        If T2 is not suppled, the time of the last sample is assumed.
+        Parameter count (# samples to read) has priority over T2.
+
+        T1:T2 my generate an of-by-one error when time slicing.
+        Thus, for repetitive slice sizes, as in a spectrogram, the first call may
+        use T1 & T2; the next spectra should then use the count from the first call.
 
         Returns:
             time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
                 first element and the scaled data array as the second element.
         """
-        count = self.number_of_samples
+        if self.channel_type == DWChannelType.DW_CH_TYPE_SYNC:
+            sr = self.sample_rate
+            n  = self.number_of_samples
+            i1 = max(0, min(n, int(T1*sr))) if T1 is not None else 0
+            i2 = max(0, min(n, int(T2*sr))) if T2 is not None else n
+            if count is None:
+                count = max(0, i2 - i1)
+        else:
+            i1 = 0
+            count = self.number_of_samples
         data = np.zeros(count*self.array_size, dtype=np.double)
         time = np.zeros(count, dtype=np.double)
         status = DLL.DWIGetScaledSamples(
             self.dwFile.reader_handle,
             self.index,
-            ctypes.c_longlong(0),
+            ctypes.c_longlong(i1),
             ctypes.c_longlong(count),
             data.ctypes,
             time.ctypes,
@@ -415,7 +450,7 @@ class DWChannel(DWChannelStruct):
 
         return df
 
-    def series(self):
+    def series(self, T1: double = None, T2: double = None, count = None):
         """
         Retrieves scaled channel values with their corresponding timestamps in a Pandas Series.
 
@@ -423,7 +458,7 @@ class DWChannel(DWChannelStruct):
             df (pandas.Series): A Pandas Series containing scaled data with
                                     the timestamps as index
         """
-        time, data = self.scaled()
+        time, data = self.scaled(T1, T2, count)
         return pd.Series(data, index=time, name=self.unique_key)
 
     def series_generator(self, chunk_size, array_index:int = 0):
@@ -490,10 +525,11 @@ class DWBinaryChannel(DWChannel):
         if status: raise DWError(status)
         return count.value
 
-    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:  # Marcelo
         """
         Retrieves binary scaled channel values with their corresponding timestamps.
 
+        T1, T2 & count are ignored.
         Returns:
             time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
                 first element and the scaled data array as the second element.
@@ -562,10 +598,11 @@ class DWComplexChannel(DWChannel):
         if status: raise DWError(status)
         return count.value
 
-    def scaled(self) -> Tuple[np.ndarray, np.ndarray]:
+    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves complex scaled channel values with their corresponding timestamps.
 
+        T1, T2 & count are not yet implemented.
         Returns:
             time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
                 first element and the scaled data array as the second element.
@@ -719,6 +756,7 @@ class DWFile(dict):
             def add(channel: DWChannel):
                 "Add the given channel to this DWFile dict using a unique key"
                 channel.dwFile = self
+                channel._sample_rate = None
                 key = self.key(channel)
                 unique_key = key  # start with the key itself
                 suffix = 0
