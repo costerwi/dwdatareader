@@ -329,7 +329,7 @@ class DWChannel(DWChannelStruct):
     @property
     def sample_rate(self):
         """ Returns the sampling rate of an individual synchronous channel, else 0. """
-        if self._sample_rate == None:
+        if self._sample_rate is None:
             if self.channel_type == DWChannelType.DW_CH_TYPE_SYNC:
                 SRDiv = ElementTree.fromstring(self.channel_xml).find("./SRDiv")
                 divisor = float(SRDiv.text) if SRDiv is not None else 1.0
@@ -384,7 +384,7 @@ class DWChannel(DWChannelStruct):
     def __repr__(self):
         return self.__str__()
 
-    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:
+    def scaled(self, T1: Optional[float] = None, T2: Optional[float] = None, count: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves scaled channel values with their corresponding timestamps.
 
@@ -409,6 +409,8 @@ class DWChannel(DWChannelStruct):
             i2 = max(0, min(n, int(T2*sr))) if T2 is not None else n
             if count is None:
                 count = max(0, i2 - i1)
+            else:
+                count = max(0, min(count, n - i1))
         else:
             i1 = 0
             count = self.number_of_samples
@@ -450,7 +452,7 @@ class DWChannel(DWChannelStruct):
 
         return df
 
-    def series(self, T1: double = None, T2: double = None, count = None):
+    def series(self, T1: Optional[float] = None, T2: Optional[float] = None, count: Optional[int] = None):
         """
         Retrieves scaled channel values with their corresponding timestamps in a Pandas Series.
 
@@ -525,7 +527,7 @@ class DWBinaryChannel(DWChannel):
         if status: raise DWError(status)
         return count.value
 
-    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:  # Marcelo
+    def scaled(self, T1: Optional[float] = None, T2: Optional[float] = None, count: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:  # Marcelo
         """
         Retrieves binary scaled channel values with their corresponding timestamps.
 
@@ -598,7 +600,7 @@ class DWComplexChannel(DWChannel):
         if status: raise DWError(status)
         return count.value
 
-    def scaled(self, T1: double = None, T2: double = None, count = None) -> Tuple[np.ndarray, np.ndarray]:
+    def scaled(self, T1: Optional[float] = None, T2: Optional[float] = None, count: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves complex scaled channel values with their corresponding timestamps.
 
