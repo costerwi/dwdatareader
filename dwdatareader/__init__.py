@@ -527,29 +527,10 @@ class DWBinaryChannel(DWChannel):
         if status: raise DWError(status)
         return count.value
 
-    def scaled(self, T1: Optional[float] = None, T2: Optional[float] = None, count: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:  # Marcelo
-        """
-        Retrieves binary scaled channel values with their corresponding timestamps.
 
-        T1, T2 & count are ignored.
-        Returns:
-            time, data (Tuple[np.ndarray, np.ndarray]): A tuple containing the timestamps as the
-                first element and the scaled data array as the second element.
-        """
-        assert self.data_type == DWDataType.dtBinary
-        count = self.number_of_samples
-        data = np.zeros(count*self.array_size, dtype=np.double)
-        time = np.zeros(count, dtype=np.double)
-        status = DLL.DWIGetBinarySamples(
-            self.dwFile.reader_handle,
-            self.index,
-            ctypes.c_longlong(0),
-            ctypes.c_longlong(count),
-            data.ctypes,
-            time.ctypes,
-        )
-        if status: raise DWError(status)
-        return time, data
+    def scaled(self):
+        raise AttributeError("scaled() is not available for binary channel.")
+
 
     def dataframe(self) -> pd.DataFrame:
         """
