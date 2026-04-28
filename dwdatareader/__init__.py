@@ -987,19 +987,32 @@ class DWStoringType(IntEnum):
 
 def loadDLL(dllPath: Optional[Path] = None) -> ctypes.CDLL:
     global DLL
-    if not dllPath:
-        # Determine appropriate library to load
+
+    system = platform.system()
+    arch = platform.architecture()[0]
+
+    suffix_by_platform = {
+        "Linux": ".so",
+        "Darwin": ".dylib",
+        "Windows": ".dll",
+    }
+
+    if dllPath is None:
+        # Base binary name
         dllName = "DWDataReaderLib"
-        if platform.architecture()[0] == '64bit':
+        if arch == "64bit":
             dllName += "64"
-        dllPath = Path(__file__).with_name(dllName)
-        if platform.system() == 'Linux':
-            dllPath = dllPath.with_suffix(".so")
-        elif platform.system() == 'Darwin':
-            dllPath = dllPath.with_suffix(".dylib")
-    loader = ctypes.cdll if platform.system() != "Windows" else ctypes.windll # type: ignore[attr-defined]
+
+        suffix = suffix_by_platform.get(system)
+        dllPath = Path(__file__).with_name(dllName).with_suffix(suffix)
+
+    if not dllPath.exists():
+        raise NotImplementedError(f"Unsupported platform: {system} {arch}")
+
+    loader = ctypes.windll if system == "Windows" else ctypes.cdll  # type: ignore[attr-defined]
     DLL = loader[str(dllPath)]
     return DLL
+
 
 def get_version():
     ver_major = ctypes.c_int()
