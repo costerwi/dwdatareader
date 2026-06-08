@@ -12,7 +12,7 @@ with dw.DWFile('myfile.d7d') as f:
 """
 
 __all__ = ['get_version', 'open_file', 'DWError', 'DWFile']
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 import atexit
 import ctypes
