@@ -6,6 +6,10 @@ image:
 
 build: false
 
+environment:
+  # Prevent uv from building heavy packages (like pandas) from source if wheels are missing
+  UV_NO_BUILD: "1"
+
 install:
   # - py --list
   - python -m pip install uv
