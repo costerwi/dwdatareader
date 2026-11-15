@@ -1,0 +1,43 @@
+[project]
+name = "dwdatareader"
+authors = [
+    { name="Carl Osterwisch", email="costerwi@gmail.com" },
+]
+description = "Python module to interact with Dewesoft DWDataReaderLib shared library"
+readme = "README.rst"
+requires-python = ">=3.9"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+]
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "pandas",
+    "numpy",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/costerwi/dwdatareader/"
+Issues = "https://github.com/costerwi/dwdatareader/issues"
+
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=9.2"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.setuptools.dynamic]
+version = {attr = "dwdatareader.__version__"}
+
+[tool.pytest]
+minversion = "9.0"
+addopts = ["-ra", "-q", "--import-mode=importlib"]
+testpaths = [
+    "tests",
+]

@@ -6,10 +6,14 @@ image:
 
 build: false
 
+environment:
+  # Prevent uv from building heavy packages (like pandas) from source if wheels are missing
+  UV_NO_BUILD: "1"
+
 install:
   # - py --list
-  - sh: for d in ~/venv3*/bin; do PATH=$PATH:$d; done
-  - python -m pip install tox
+  - python -m pip install uv
+  - uv tool install tox --with tox-uv
 
 test_script:
-  - python -m tox
+  - uv tool run tox -v
