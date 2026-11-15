@@ -12,4 +12,4 @@ install:
   - uv tool install tox --with tox-uv
 
 test_script:
-  - python -m tox
+  - uv tool run tox
