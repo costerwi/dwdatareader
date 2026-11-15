@@ -8,7 +8,6 @@ build: false
 
 install:
   # - py --list
-  - sh: for d in ~/venv3*/bin; do PATH=$PATH:$d; done
   - python -m pip install tox-uv
 
 test_script:
