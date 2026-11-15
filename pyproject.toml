@@ -5,7 +5,7 @@ authors = [
 ]
 description = "Python module to interact with Dewesoft DWDataReaderLib shared library"
 readme = "README.rst"
-requires-python = ">=3.6"
+requires-python = ">=3.9"
 classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Information Analysis",
