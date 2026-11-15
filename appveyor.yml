@@ -9,7 +9,7 @@ build: false
 install:
   # - py --list
   - python -m pip install uv
-  - uv pip install tox-uv
+  - uv tool install tox --with tox-uv
 
 test_script:
   - python -m tox
