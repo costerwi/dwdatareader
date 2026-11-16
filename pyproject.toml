@@ -41,3 +41,19 @@ addopts = ["-ra", "-q", "--import-mode=importlib"]
 testpaths = [
     "tests",
 ]
+
+[tool.tox]
+env_list = ["py314", "py312", "py39"]
+
+[tool.tox.env_run_base]
+deps = ["pytest"]
+commands = [["pytest"]]
+
+[tool.tox.env.py39]
+base_python = ["cpython3.9-64"]
+
+[tool.tox.env.py312]
+base_python = ["cpython3.12-64"]
+
+[tool.tox.env.py314]
+base_python = ["cpython3.14-64"]
